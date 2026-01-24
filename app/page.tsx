@@ -94,7 +94,7 @@ export default function Home() {
       <Navbar title="V-Sphere" />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#8B1E26] via-[#8B1E26] to-[#6B1520] text-white py-24 sm:py-32">
+      <section className="relative overflow-hidden bg-linear-to-br from-[#8B1E26] via-[#8B1E26] to-[#6B1520] text-white py-24 sm:py-32">
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
             animate={{

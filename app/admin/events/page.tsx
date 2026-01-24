@@ -1,3 +1,5 @@
+// d:\events\event\app\admin\events\page.tsx
+
 'use client';
 
 import { useRouter } from 'next/navigation';

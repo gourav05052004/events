@@ -1,7 +1,6 @@
 'use client';
 
 import React from "react"
-
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -139,11 +138,14 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Email Input */}
+              {/* Email Input - FIXED VERSION */}
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <label className="block text-sm font-medium text-[#2D2D2D] mb-1">
+                  Email
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-3.5 text-[#8B1E26]" size={20} />
-                  <InputField
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8B1E26]" size={20} />
+                  <input
                     type="email"
                     placeholder="your.email@college.edu"
                     value={email}
@@ -151,11 +153,20 @@ export default function LoginPage() {
                       setEmail(e.target.value);
                       setErrors({ ...errors, email: undefined });
                     }}
-                    error={errors.email}
-                    label="Email"
-                    className="pl-12"
+                    className={`w-full pl-10 pr-4 py-2.5 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] placeholder-[#999999] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent transition-all ${
+                      errors.email ? 'border-[#D32F2F]' : ''
+                    }`}
                   />
                 </div>
+                {errors.email && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-1 text-sm text-[#D32F2F]"
+                  >
+                    {errors.email}
+                  </motion.p>
+                )}
               </motion.div>
 
               {/* Password Input */}
@@ -164,8 +175,11 @@ export default function LoginPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
               >
+                <label className="block text-sm font-medium text-[#2D2D2D] mb-1">
+                  Password
+                </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 text-[#8B1E26]" size={20} />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8B1E26]" size={20} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
@@ -174,14 +188,14 @@ export default function LoginPage() {
                       setPassword(e.target.value);
                       setErrors({ ...errors, password: undefined });
                     }}
-                    className={`w-full pl-12 pr-12 py-2.5 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] placeholder-[#999999] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent transition-all ${
+                    className={`w-full pl-10 pr-12 py-2.5 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] placeholder-[#999999] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent transition-all ${
                       errors.password ? 'border-[#D32F2F]' : ''
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-[#666666]"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#666666] hover:text-[#8B1E26]"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>

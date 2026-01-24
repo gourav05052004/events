@@ -10,9 +10,16 @@ interface NavbarProps {
   showBackButton?: boolean;
   onBackClick?: () => void;
   userRole?: 'student' | 'club' | 'admin';
+  onMenuClick?: () => void; // Add this line
 }
 
-export function Navbar({ title, showBackButton = false, onBackClick, userRole }: NavbarProps) {
+export function Navbar({ 
+  title, 
+  showBackButton = false, 
+  onBackClick, 
+  userRole, 
+  onMenuClick // Add this prop
+}: NavbarProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -34,6 +41,16 @@ export function Navbar({ title, showBackButton = false, onBackClick, userRole }:
 
   const items = userRole ? navigationItems[userRole] : [];
 
+  const handleMobileMenuClick = () => {
+    // Call the external onMenuClick if provided
+    if (onMenuClick) {
+      onMenuClick();
+    } else {
+      // Otherwise use internal state
+      setMobileMenuOpen(!mobileMenuOpen);
+    }
+  };
+
   return (
     <motion.nav
       initial={{ y: -100 }}
@@ -43,6 +60,16 @@ export function Navbar({ title, showBackButton = false, onBackClick, userRole }:
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
+            {/* Mobile Menu Button - Only show if onMenuClick is provided */}
+            {onMenuClick && (
+              <button
+                onClick={onMenuClick}
+                className="md:hidden p-2 text-[#2D2D2D] hover:bg-[#F8F9FA] rounded-lg transition-colors"
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            
             {showBackButton && (
               <button
                 onClick={onBackClick || (() => router.back())}
@@ -82,14 +109,19 @@ export function Navbar({ title, showBackButton = false, onBackClick, userRole }:
             </motion.button>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile Menu Button - Only show if onMenuClick is NOT provided */}
+          {!onMenuClick && (
+            <button 
+              className="md:hidden" 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          )}
         </div>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
+        {/* Mobile Navigation - Only show if onMenuClick is NOT provided */}
+        {!onMenuClick && mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
