@@ -3,7 +3,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
@@ -19,90 +19,67 @@ const sidebarItems = [
 ];
 
 interface AdminEvent {
-  id: string;
+  _id: string;
   title: string;
-  organizer: string;
+  club_name: string;
   date: string;
-  status: 'pending' | 'approved' | 'cancelled';
+  status: 'PENDING' | 'APPROVED' | 'RESCHEDULED' | 'CANCELLED';
   registrations: number;
-  venue: string;
-  actions: number;
+  max_participants: number;
+  location: string;
 }
-
-const allEvents: AdminEvent[] = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    organizer: 'Computer Science Club',
-    date: 'Feb 15, 2025',
-    status: 'approved',
-    registrations: 245,
-    venue: 'Main Auditorium',
-    actions: 3,
-  },
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    organizer: 'Tech Club',
-    date: 'Feb 20, 2025',
-    status: 'approved',
-    registrations: 120,
-    venue: 'Lab 101',
-    actions: 2,
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    organizer: 'Sports Committee',
-    date: 'Feb 25, 2025',
-    status: 'approved',
-    registrations: 600,
-    venue: 'Sports Ground',
-    actions: 5,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    organizer: 'Entrepreneurship Club',
-    date: 'Mar 5, 2025',
-    status: 'pending',
-    registrations: 89,
-    venue: 'Conference Hall',
-    actions: 1,
-  },
-  {
-    id: '5',
-    title: 'Photography Workshop',
-    organizer: 'Photography Club',
-    date: 'Mar 10, 2025',
-    status: 'pending',
-    registrations: 45,
-    venue: 'Art Studio',
-    actions: 0,
-  },
-];
 
 export default function AdminEventsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const filteredEvents = allEvents.filter((event) => {
+  // Fetch events from API
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/admin/events');
+      const data = await response.json();
+
+      if (data.success) {
+        setEvents(data.data);
+        setError('');
+      } else {
+        setError('Failed to load events');
+      }
+    } catch (err) {
+      setError('An error occurred while loading events');
+      console.error('Error fetching events:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.organizer.toLowerCase().includes(searchQuery.toLowerCase());
+      event.club_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || event.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'APPROVED':
         return 'bg-green-100 text-green-700';
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-700';
-      case 'cancelled':
+      case 'RESCHEDULED':
+        return 'bg-blue-100 text-blue-700';
+      case 'CANCELLED':
         return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
@@ -161,9 +138,10 @@ export default function AdminEventsPage() {
                     className="pl-10 pr-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
                   >
                     <option value="all">All Status</option>
-                    <option value="approved">Approved</option>
-                    <option value="pending">Pending</option>
-                    <option value="cancelled">Cancelled</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="RESCHEDULED">Rescheduled</option>
+                    <option value="CANCELLED">Cancelled</option>
                   </select>
                 </div>
                 <motion.button
@@ -185,8 +163,19 @@ export default function AdminEventsPage() {
             transition={{ delay: 0.2 }}
             className="text-[#666666] mb-6"
           >
-            Showing {filteredEvents.length} of {allEvents.length} events
+            {isLoading ? 'Loading...' : `Showing ${filteredEvents.length} of ${events.length} events`}
           </motion.p>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6"
+            >
+              {error}
+            </motion.div>
+          )}
 
           {/* Events Table */}
           <motion.div
@@ -195,60 +184,75 @@ export default function AdminEventsPage() {
             transition={{ delay: 0.2 }}
             className="bg-white rounded-xl overflow-hidden border border-[#E8E8E8]"
           >
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#F8F9FA] border-b border-[#E8E8E8]">
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Event</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Organizer</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Date</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Registrations</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Venue</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEvents.map((event, index) => (
-                    <motion.tr
-                      key={event.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      whileHover={{ backgroundColor: '#F8F9FA' }}
-                      className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
-                    >
-                      <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
-                      <td className="px-6 py-4 text-[#666666]">{event.organizer}</td>
-                      <td className="px-6 py-4 text-[#666666]">{event.date}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                            event.status
-                          )}`}
-                        >
-                          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-[#2D2D2D]">{event.registrations}</td>
-                      <td className="px-6 py-4 text-[#666666]">{event.venue}</td>
-                      <td className="px-6 py-4">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => router.push(`/admin/events/${event.id}`)}
-                          className="text-sm font-bold text-[#8B1E26] hover:underline"
-                        >
-                          View Details
-                        </motion.button>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-8 h-8 border-4 border-[#E8E8E8] border-t-[#8B1E26] rounded-full animate-spin" />
+                  <p className="text-[#666666]">Loading events...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#F8F9FA] border-b border-[#E8E8E8]">
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Event</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Club</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Date</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Status</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Registrations</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Location</th>
+                      <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredEvents.map((event, index) => (
+                      <motion.tr
+                        key={event._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        whileHover={{ backgroundColor: '#F8F9FA' }}
+                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
+                      >
+                        <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
+                        <td className="px-6 py-4 text-[#666666]">{event.club_name}</td>
+                        <td className="px-6 py-4 text-[#666666]">
+                          {new Date(event.date).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                              event.status
+                            )}`}
+                          >
+                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-[#2D2D2D]">
+                          <span className="text-sm">
+                            {event.registrations}/{event.max_participants}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-[#666666] text-sm">{event.location || 'TBD'}</td>
+                        <td className="px-6 py-4">
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => router.push(`/admin/events/${event._id}`)}
+                            className="text-sm font-bold text-[#8B1E26] hover:underline"
+                          >
+                            View Details
+                          </motion.button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-            {filteredEvents.length === 0 && (
+            {!isLoading && filteredEvents.length === 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

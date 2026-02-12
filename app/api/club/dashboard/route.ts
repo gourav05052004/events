@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch club info
-    const club = await Club.findById(clubId).lean();
+    const club = await Club.findById(clubId).lean() as any;
     if (!club) {
       return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }

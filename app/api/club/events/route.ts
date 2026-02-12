@@ -50,7 +50,6 @@ export async function POST(request: Request) {
     const startTime = String(formData.get('startTime') || '').trim();
     const endTime = String(formData.get('endTime') || '').trim();
     const registrationDeadline = String(formData.get('registrationDeadline') || '').trim();
-    const location = String(formData.get('location') || '').trim();
     const venueType = String(formData.get('venueType') || '').trim();
     const minParticipants = Number(formData.get('minParticipants') || 0);
     const maxParticipants = Number(formData.get('maxParticipants') || 0);
@@ -93,7 +92,7 @@ export async function POST(request: Request) {
       description,
       event_type: (eventType.toUpperCase() === 'TEAM' ? 'TEAM' : 'INDIVIDUAL') as EventType,
       poster_url: uploadResult.secure_url,
-      location,
+      location: '', // Location will be set when admin allocates a venue
       requested_resource_type: resourceType,
       allocated_resource_id: null,
       date: new Date(date),

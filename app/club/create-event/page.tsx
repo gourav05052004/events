@@ -30,7 +30,6 @@ export default function CreateEventPage() {
     startTime: '',
     endTime: '',
     registrationDeadline: '',
-    location: '',
     venueType: '',
     minParticipants: '',
     maxParticipants: '',
@@ -85,7 +84,6 @@ export default function CreateEventPage() {
     payload.append('startTime', formData.startTime);
     payload.append('endTime', formData.endTime);
     payload.append('registrationDeadline', formData.registrationDeadline);
-    payload.append('location', formData.location);
     payload.append('venueType', formData.venueType);
     payload.append('minParticipants', formData.minParticipants);
     payload.append('maxParticipants', formData.maxParticipants);
@@ -268,17 +266,6 @@ export default function CreateEventPage() {
                   label="Registration Deadline"
                   value={formData.registrationDeadline}
                   onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
-                  required
-                />
-              </motion.div>
-
-              {/* Location */}
-              <motion.div variants={item}>
-                <InputField
-                  label="Location / Building"
-                  placeholder="e.g., Main Auditorium, Lab 101"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
                   required
                 />
               </motion.div>

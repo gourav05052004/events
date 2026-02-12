@@ -3,11 +3,11 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
-import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -18,156 +18,204 @@ const sidebarItems = [
   { label: 'Settings', href: '/admin/settings' },
 ];
 
-// Mock event data - replace with API call
-const eventData: Record<string, any> = {
-  '1': {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    organizer: 'Computer Science Club',
-    organizerEmail: 'csclub@college.edu',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM - 5:00 PM',
-    status: 'approved',
-    registrations: 245,
-    maxCapacity: 500,
-    venue: 'Main Auditorium',
-    description: 'Join us for the Annual Tech Summit 2025, featuring keynote speakers, technical workshops, and networking opportunities. Learn about the latest trends in technology and connect with industry professionals.',
-    agenda: [
-      { time: '10:00 AM', activity: 'Registration & Welcome' },
-      { time: '10:30 AM', activity: 'Keynote Speech' },
-      { time: '12:00 PM', activity: 'Lunch Break' },
-      { time: '1:00 PM', activity: 'Technical Workshops' },
-      { time: '3:30 PM', activity: 'Networking Session' },
-      { time: '5:00 PM', activity: 'Closing Ceremony' },
-    ],
-    registeredStudents: [
-      { id: '1', name: 'John Doe', email: 'john@college.edu', registeredOn: 'Jan 20, 2025' },
-      { id: '2', name: 'Jane Smith', email: 'jane@college.edu', registeredOn: 'Jan 19, 2025' },
-      { id: '3', name: 'Mike Johnson', email: 'mike@college.edu', registeredOn: 'Jan 18, 2025' },
-    ],
-  },
-  '2': {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    organizer: 'Tech Club',
-    organizerEmail: 'techclub@college.edu',
-    date: 'Feb 20, 2025',
-    time: '2:00 PM - 6:00 PM',
-    status: 'approved',
-    registrations: 120,
-    maxCapacity: 200,
-    venue: 'Lab 101',
-    description: 'An intensive workshop on AI and Machine Learning concepts, practical applications, and hands-on projects.',
-    agenda: [
-      { time: '2:00 PM', activity: 'Introduction to AI & ML' },
-      { time: '3:00 PM', activity: 'Hands-on Coding Session' },
-      { time: '4:30 PM', activity: 'Q&A Session' },
-      { time: '6:00 PM', activity: 'Wrap Up' },
-    ],
-    registeredStudents: [
-      { id: '4', name: 'Alice Brown', email: 'alice@college.edu', registeredOn: 'Jan 21, 2025' },
-      { id: '5', name: 'Bob Wilson', email: 'bob@college.edu', registeredOn: 'Jan 20, 2025' },
-    ],
-  },
-  '3': {
-    id: '3',
-    title: 'Sports Day Celebration',
-    organizer: 'Sports Committee',
-    organizerEmail: 'sports@college.edu',
-    date: 'Feb 25, 2025',
-    time: '8:00 AM - 3:00 PM',
-    status: 'approved',
-    registrations: 600,
-    maxCapacity: 800,
-    venue: 'Sports Ground',
-    description: 'Annual sports day celebration featuring various sporting events, competitions, and cultural programs.',
-    agenda: [
-      { time: '8:00 AM', activity: 'Opening Ceremony' },
-      { time: '9:00 AM', activity: 'Track & Field Events' },
-      { time: '12:00 PM', activity: 'Lunch Break' },
-      { time: '1:00 PM', activity: 'Team Sports' },
-      { time: '3:00 PM', activity: 'Closing & Prize Distribution' },
-    ],
-    registeredStudents: [],
-  },
-  '4': {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    organizer: 'Entrepreneurship Club',
-    organizerEmail: 'entreclub@college.edu',
-    date: 'Mar 5, 2025',
-    time: '9:00 AM - 4:00 PM',
-    status: 'pending',
-    registrations: 89,
-    maxCapacity: 300,
-    venue: 'Conference Hall',
-    description: 'Summit for aspiring entrepreneurs featuring success stories, startup pitches, and investor meetings.',
-    agenda: [
-      { time: '9:00 AM', activity: 'Welcome Address' },
-      { time: '10:00 AM', activity: 'Keynote: Success Stories' },
-      { time: '12:00 PM', activity: 'Lunch' },
-      { time: '1:00 PM', activity: 'Startup Pitch Competition' },
-      { time: '3:00 PM', activity: 'Investor Networking' },
-      { time: '4:00 PM', activity: 'Awards & Closing' },
-    ],
-    registeredStudents: [],
-  },
-  '5': {
-    id: '5',
-    title: 'Photography Workshop',
-    organizer: 'Photography Club',
-    organizerEmail: 'photoclub@college.edu',
-    date: 'Mar 10, 2025',
-    time: '3:00 PM - 6:00 PM',
-    status: 'pending',
-    registrations: 45,
-    maxCapacity: 100,
-    venue: 'Art Studio',
-    description: 'Learn professional photography techniques with hands-on practice sessions.',
-    agenda: [
-      { time: '3:00 PM', activity: 'Photography Basics' },
-      { time: '4:00 PM', activity: 'Practical Session' },
-      { time: '5:30 PM', activity: 'Critique & Feedback' },
-      { time: '6:00 PM', activity: 'Closing' },
-    ],
-    registeredStudents: [],
-  },
-};
+interface Registration {
+  _id: string;
+  student_name: string;
+  email: string;
+  roll_number: string;
+  status: 'CONFIRMED' | 'WAITLISTED';
+  registered_at: string;
+}
+
+interface Venue {
+  _id: string;
+  name: string;
+  location: string;
+  capacity: number;
+  type: 'HALL' | 'ROOM' | 'LAB';
+  amenities: string[];
+  bookedEvents: number;
+  availability: 'available' | 'partially_booked' | 'full_booked';
+  manager: string;
+  contact: string;
+  hasTimeConflict?: boolean;
+  conflictingEvent?: {
+    _id: string;
+    title: string;
+    start_time: string;
+    end_time: string;
+  };
+}
+
+interface EventDetail {
+  _id: string;
+  title: string;
+  description: string;
+  primary_club_id: {
+    club_name: string;
+    email: string;
+    faculty_coordinator_name: string;
+  };
+  date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  status: 'PENDING' | 'APPROVED' | 'RESCHEDULED' | 'CANCELLED';
+  max_participants: number;
+  min_participants: number;
+  event_type: string;
+  requested_resource_type: string;
+  allocated_resource_id: {
+    _id: string;
+    name: string;
+    resource_type: string;
+    location: string;
+  } | string | null;
+  created_at: string;
+  registrations: Registration[];
+  registration_summary: {
+    total: number;
+    confirmed: number;
+    waitlisted: number;
+    available_spots: number;
+  };
+}
 
 export default function EventDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const eventId = params.id as string;
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [event, setEvent] = useState<EventDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [newStatus, setNewStatus] = useState('PENDING');
+  const [editedDescription, setEditedDescription] = useState('');
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [selectedVenueId, setSelectedVenueId] = useState<string>('');
 
-  const event = eventData[eventId];
+  // Fetch event details
+  useEffect(() => {
+    fetchEventDetails();
+  }, [eventId]);
 
-  if (!event) {
-    return (
-      <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" userRole="admin" />
-        <Sidebar
-          items={sidebarItems}
-          onLogout={() => router.push('/')}
-          mobileOpen={mobileMenuOpen}
-          onMobileClose={() => setMobileMenuOpen(false)}
-        />
-        <div className="md:ml-64 pt-6">
-          <div className="max-w-7xl mx-auto px-4 py-12 text-center">
-            <p className="text-xl text-[#666666]">Event not found</p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  // Fetch venues when event data is available
+  useEffect(() => {
+    if (event) {
+      fetchVenues();
+    }
+  }, [event?.date, event?.start_time, event?.end_time]);
+
+  const fetchEventDetails = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/admin/events/${eventId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setEvent(data.data);
+        setNewStatus(data.data.status);
+        setEditedDescription(data.data.description);
+        // Handle allocated_resource_id as object or string
+        const resourceId = typeof data.data.allocated_resource_id === 'object' 
+          ? data.data.allocated_resource_id?._id 
+          : data.data.allocated_resource_id;
+        setSelectedVenueId(resourceId || '');
+        setError('');
+      } else {
+        setError('Failed to load event details');
+      }
+    } catch (err) {
+      setError('An error occurred while loading event details');
+      console.error('Error fetching event:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchVenues = async () => {
+    try {
+      if (!event || !event.date || !event.start_time || !event.end_time) {
+        return;
+      }
+
+      // Convert date to ISO string for API
+      const eventDate = new Date(event.date);
+      const eventDateISO = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+      const params = new URLSearchParams({
+        eventDate: eventDateISO,
+        startTime: event.start_time,
+        endTime: event.end_time,
+        eventId: eventId, // Exclude current event from conflict check
+      });
+
+      const response = await fetch(`/api/admin/venues?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Use data.data which contains only available venues (no conflicts)
+        setVenues(data.data);
+      } else {
+        console.error('Failed to load venues');
+      }
+    } catch (err) {
+      console.error('Error fetching venues:', err);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!event) return;
+
+    try {
+      setIsSaving(true);
+      setError('');
+      setSuccess('');
+
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          description: editedDescription,
+          allocated_resource_id: selectedVenueId || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to update event');
+        return;
+      }
+
+      setSuccess('Event updated successfully');
+      fetchEventDetails();
+      setIsEditing(false);
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('An error occurred while updating the event');
+      console.error('Error:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'APPROVED':
         return 'bg-green-100 text-green-700';
-      case 'pending':
+      case 'PENDING':
         return 'bg-yellow-100 text-yellow-700';
-      case 'cancelled':
+      case 'RESCHEDULED':
+        return 'bg-blue-100 text-blue-700';
+      case 'CANCELLED':
         return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
@@ -176,12 +224,14 @@ export default function EventDetailsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'approved':
+      case 'APPROVED':
         return <Check size={16} />;
-      case 'pending':
+      case 'PENDING':
         return <AlertCircle size={16} />;
-      case 'cancelled':
+      case 'CANCELLED':
         return <X size={16} />;
+      case 'RESCHEDULED':
+        return <Calendar size={16} />;
       default:
         return null;
     }
@@ -203,198 +253,462 @@ export default function EventDetailsPage() {
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/events')}
             className="flex items-center gap-2 text-[#8B1E26] font-medium mb-8 hover:gap-3 transition-all"
           >
             <ArrowLeft size={20} />
             Back to Events
           </motion.button>
 
-          {/* Event Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm p-8 mb-8 border border-[#E8E8E8]"
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold text-[#2D2D2D] mb-4">{event.title}</h1>
-                <div className="flex flex-wrap gap-4 text-[#666666]">
-                  <div className="flex items-center gap-2">
-                    <Calendar size={18} />
-                    {event.date}, {event.time}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={18} />
-                    {event.venue}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={18} />
-                    {event.registrations} / {event.maxCapacity} attendees
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3">
-                <span
-                  className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 w-fit ${getStatusColor(
-                    event.status
-                  )}`}
-                >
-                  {getStatusIcon(event.status)}
-                  {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                </span>
-                {event.status === 'pending' && (
-                  <div className="flex gap-3">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-all"
-                    >
-                      <Check size={18} />
-                      Approve
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-all"
-                    >
-                      <X size={18} />
-                      Reject
-                    </motion.button>
-                  </div>
-                )}
+          {/* Success Message */}
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg mb-6"
+            >
+              <Check className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+              <p className="text-green-700 text-sm">{success}</p>
+            </motion.div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg mb-6"
+            >
+              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+              <p className="text-red-700 text-sm">{error}</p>
+            </motion.div>
+          )}
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-8 h-8 border-4 border-[#E8E8E8] border-t-[#8B1E26] rounded-full animate-spin" />
+                <p className="text-[#666666]">Loading event details...</p>
               </div>
             </div>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="md:col-span-2 space-y-8">
-              {/* Description */}
+          ) : !event ? (
+            <div className="text-center">
+              <p className="text-[#666666] mb-6">Event not found</p>
+              <button
+                onClick={() => router.push('/admin/events')}
+                className="text-[#8B1E26] hover:underline font-medium"
+              >
+                Back to Events
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Event Header */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                className="bg-white rounded-xl shadow-sm p-8 mb-8 border border-[#E8E8E8]"
               >
-                <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Description</h2>
-                <p className="text-[#666666] leading-relaxed">{event.description}</p>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                  <div className="flex-1">
+                    <h1 className="text-4xl font-bold text-[#2D2D2D] mb-4">{event.title}</h1>
+                    <div className="flex flex-wrap gap-4 text-[#666666] text-sm">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={18} />
+                        {new Date(event.date).toLocaleDateString('en-GB')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={18} />
+                        {event.start_time} - {event.end_time}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin size={18} />
+                        {event.location || 'TBD'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={18} />
+                        {event.registration_summary.total} / {event.max_participants} attendees
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <span
+                      className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 w-fit ${getStatusColor(
+                        event.status
+                      )}`}
+                    >
+                      {getStatusIcon(event.status)}
+                      {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                    </span>
+                    {!isEditing && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsEditing(true)}
+                        className="flex items-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all"
+                      >
+                        <Edit2 size={18} />
+                        Edit Status
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
               </motion.div>
 
-              {/* Event Agenda */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
-              >
-                <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Event Agenda</h2>
-                <div className="space-y-4">
-                  {event.agenda.map((item: any, index: number) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + index * 0.05 }}
-                      className="flex gap-4 pb-4 border-b border-[#E8E8E8] last:border-0"
-                    >
-                      <div className="flex-shrink-0">
-                        <span className="flex items-center justify-center w-12 h-12 bg-[#8B1E26]/10 text-[#8B1E26] rounded-lg font-bold text-sm">
-                          {index + 1}
-                        </span>
+              <div className="grid md:grid-cols-3 gap-8">
+                {/* Main Content */}
+                <div className="md:col-span-2 space-y-8">
+                  {/* Description */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <FileText size={20} className="text-[#8B1E26]" />
+                      <h2 className="text-2xl font-bold text-[#2D2D2D]">Description</h2>
+                    </div>
+                    {isEditing ? (
+                      <textarea
+                        value={editedDescription}
+                        onChange={(e) => setEditedDescription(e.target.value)}
+                        className="w-full px-4 py-3 border border-[#E8E8E8] rounded-lg text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] resize-none"
+                        rows={4}
+                      />
+                    ) : (
+                      <p className="text-[#666666] leading-relaxed">{event.description}</p>
+                    )}
+                  </motion.div>
+
+                  {/* Location */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                  >
+                    <div className="flex items-center gap-2 mb-4">
+                      <MapPin size={20} className="text-[#8B1E26]" />
+                      <h2 className="text-2xl font-bold text-[#2D2D2D]">Venue Allocation</h2>
+                    </div>
+                    {isEditing ? (
+                      <div className="space-y-4">
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="text-sm text-blue-800">
+                            📌 The event location will automatically be set to the allocated venue name.
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[#2D2D2D] mb-2">
+                            Select Available Venue
+                          </label>
+                          <select
+                            value={selectedVenueId}
+                            onChange={(e) => setSelectedVenueId(e.target.value)}
+                            className="w-full px-4 py-3 border border-[#E8E8E8] rounded-lg text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
+                          >
+                            <option value="">-- Select a venue --</option>
+                            {venues
+                              .filter((v) => v.type === event?.requested_resource_type)
+                              .map((venue) => (
+                                <option key={venue._id} value={venue._id}>
+                                  {venue.name} ({venue.type}) - {venue.capacity} capacity
+                                </option>
+                              ))}
+                          </select>
+                          <p className="text-xs text-[#999999] mt-2">
+                            Only venues available on {event?.date} from {event?.start_time} to {event?.end_time} are shown
+                          </p>
+                        </div>
+                        {selectedVenueId && (
+                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            {venues.find((v) => v._id === selectedVenueId) && (
+                              <div className="space-y-2 text-sm">
+                                <p className="text-[#2D2D2D]">
+                                  <strong>Venue:</strong>{' '}
+                                  {venues.find((v) => v._id === selectedVenueId)?.name}
+                                </p>
+                                <p className="text-[#2D2D2D]">
+                                  <strong>Location:</strong>{' '}
+                                  {venues.find((v) => v._id === selectedVenueId)?.location}
+                                </p>
+                                <p className="text-[#2D2D2D]">
+                                  <strong>Capacity:</strong>{' '}
+                                  {venues.find((v) => v._id === selectedVenueId)?.capacity}
+                                </p>
+                                <p className="text-[#2D2D2D]">
+                                  <strong>Status:</strong>{' '}
+                                  <span
+                                    className={`px-2 py-1 rounded text-xs font-medium ${
+                                      venues.find((v) => v._id === selectedVenueId)
+                                        ?.availability === 'available'
+                                        ? 'bg-green-100 text-green-700'
+                                        : venues.find((v) => v._id === selectedVenueId)
+                                            ?.availability === 'partially_booked'
+                                          ? 'bg-yellow-100 text-yellow-700'
+                                          : 'bg-red-100 text-red-700'
+                                    }`}
+                                  >
+                                    {venues
+                                      .find((v) => v._id === selectedVenueId)
+                                      ?.availability.replace('_', ' ')
+                                      .toUpperCase()}
+                                  </span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-[#2D2D2D]">{item.time}</p>
-                        <p className="text-[#666666]">{item.activity}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {event.allocated_resource_id && typeof event.allocated_resource_id === 'object' ? (
+                          <div>
+                            <p className="text-[#666666] font-medium">
+                              {event.allocated_resource_id.name}
+                            </p>
+                            <p className="text-sm text-[#999999]">
+                              {event.allocated_resource_id.location}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-[#666666]">No venue allocated</p>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+
+                  {/* Venue Availability */}
+                  {isEditing && venues.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <AlertCircle size={20} className="text-[#8B1E26]" />
+                        <h2 className="text-2xl font-bold text-[#2D2D2D]">Venue Availability</h2>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                          <p className="text-sm font-medium text-green-800 mb-3">
+                            ✓ Available Venues ({venues.filter((v) => v.type === event?.requested_resource_type).length})
+                          </p>
+                          <div className="space-y-2">
+                            {venues.filter((v) => v.type === event?.requested_resource_type).length > 0 ? (
+                              venues
+                                .filter((v) => v.type === event?.requested_resource_type)
+                                .map((venue) => (
+                                  <div
+                                    key={venue._id}
+                                    className="text-sm text-green-700 p-2 bg-green-50 rounded border border-green-200"
+                                  >
+                                    <strong>{venue.name}</strong> - {venue.location} (Capacity: {venue.capacity})
+                                  </div>
+                                ))
+                            ) : (
+                              <p className="text-sm text-green-600">No venues available</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </motion.div>
-                  ))}
+                  )}
+
+                  {/* Registrations */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                  >
+                    <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">
+                      Registrations ({event.registration_summary.total})
+                    </h2>
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm text-blue-600 mb-2">Confirmed</p>
+                        <p className="text-2xl font-bold text-blue-700">{event.registration_summary.confirmed}</p>
+                      </div>
+                      <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm text-yellow-600 mb-2">Waitlisted</p>
+                        <p className="text-2xl font-bold text-yellow-700">{event.registration_summary.waitlisted}</p>
+                      </div>
+                      <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-sm text-green-600 mb-2">Available</p>
+                        <p className="text-2xl font-bold text-green-700">{event.registration_summary.available_spots}</p>
+                      </div>
+                    </div>
+
+                    {event.registrations.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-[#E8E8E8]">
+                              <th className="px-4 py-3 text-left font-bold text-[#2D2D2D]">Name</th>
+                              <th className="px-4 py-3 text-left font-bold text-[#2D2D2D]">Roll Number</th>
+                              <th className="px-4 py-3 text-left font-bold text-[#2D2D2D]">Email</th>
+                              <th className="px-4 py-3 text-left font-bold text-[#2D2D2D]">Status</th>
+                              <th className="px-4 py-3 text-left font-bold text-[#2D2D2D]">Registered On</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {event.registrations.map((registration) => (
+                              <motion.tr
+                                key={registration._id}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
+                              >
+                                <td className="px-4 py-3 text-[#2D2D2D] font-medium">{registration.student_name}</td>
+                                <td className="px-4 py-3 text-[#666666]">{registration.roll_number}</td>
+                                <td className="px-4 py-3 text-[#666666] text-xs">{registration.email}</td>
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={`px-2 py-1 rounded text-xs font-medium ${
+                                      registration.status === 'CONFIRMED'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-yellow-100 text-yellow-700'
+                                    }`}
+                                  >
+                                    {registration.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-[#666666] text-xs">
+                                  {new Date(registration.registered_at).toLocaleDateString('en-GB')}
+                                </td>
+                              </motion.tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-[#666666]">No registrations yet.</p>
+                    )}
+                  </motion.div>
                 </div>
-              </motion.div>
 
-              {/* Registered Students */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
-              >
-                <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">
-                  Registered Students ({event.registeredStudents.length})
-                </h2>
-                {event.registeredStudents.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-[#E8E8E8]">
-                          <th className="px-4 py-2 text-left font-bold text-[#2D2D2D]">Name</th>
-                          <th className="px-4 py-2 text-left font-bold text-[#2D2D2D]">Email</th>
-                          <th className="px-4 py-2 text-left font-bold text-[#2D2D2D]">Registered On</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {event.registeredStudents.map((student: any) => (
-                          <motion.tr
-                            key={student.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
-                          >
-                            <td className="px-4 py-3 text-[#2D2D2D]">{student.name}</td>
-                            <td className="px-4 py-3 text-[#666666]">{student.email}</td>
-                            <td className="px-4 py-3 text-[#666666]">{student.registeredOn}</td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-[#666666]">No students registered yet.</p>
-                )}
-              </motion.div>
-            </div>
-
-            {/* Sidebar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-6"
-            >
-              {/* Organizer Info */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
-                <h3 className="font-bold text-[#2D2D2D] mb-4">Organizer</h3>
-                <p className="text-[#2D2D2D] font-medium mb-2">{event.organizer}</p>
-                <a
-                  href={`mailto:${event.organizerEmail}`}
-                  className="text-[#8B1E26] hover:underline text-sm"
+                {/* Sidebar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="space-y-6"
                 >
-                  {event.organizerEmail}
-                </a>
-              </div>
+                  {/* Status Editor */}
+                  {isEditing && (
+                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-[#8B1E26]">
+                      <h3 className="font-bold text-[#2D2D2D] mb-4">Update Status</h3>
+                      <select
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value)}
+                        className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] mb-4"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="RESCHEDULED">Rescheduled</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                      <div className="flex gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleUpdateStatus}
+                          disabled={isSaving}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1620] transition-colors disabled:opacity-50"
+                        >
+                          {isSaving ? (
+                            <>
+                              <Loader size={16} className="animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save size={16} />
+                              Save
+                            </>
+                          )}
+                        </motion.button>
+                        <button
+                          onClick={() => {
+                            setIsEditing(false);
+                            setNewStatus(event.status);
+                            setEditedDescription(event.description);
+                          }}
+                          className="flex-1 px-4 py-2 border border-[#E8E8E8] text-[#2D2D2D] rounded-lg font-medium hover:bg-[#F8F9FA] transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Event Stats */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
-                <h3 className="font-bold text-[#2D2D2D] mb-4">Event Stats</h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-[#666666] mb-1">Registrations</p>
-                    <div className="w-full bg-[#E8E8E8] rounded-full h-2">
+                  {/* Organizer Info */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
+                    <h3 className="font-bold text-[#2D2D2D] mb-4">Organizing Club</h3>
+                    <p className="text-[#2D2D2D] font-medium mb-2">{event.primary_club_id.club_name}</p>
+                    <p className="text-sm text-[#666666] mb-3">
+                      <span className="font-medium">Coordinator:</span> {event.primary_club_id.faculty_coordinator_name}
+                    </p>
+                    <a
+                      href={`mailto:${event.primary_club_id.email}`}
+                      className="text-[#8B1E26] hover:underline text-sm"
+                    >
+                      {event.primary_club_id.email}
+                    </a>
+                  </div>
+
+                  {/* Event Info */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
+                    <h3 className="font-bold text-[#2D2D2D] mb-4">Event Info</h3>
+                    <div className="space-y-3 text-sm">
+                      <div>
+                        <p className="text-[#666666]">Event Type</p>
+                        <p className="font-medium text-[#2D2D2D]">{event.event_type}</p>
+                      </div>
+                      <div>
+                        <p className="text-[#666666]">Resource Type</p>
+                        <p className="font-medium text-[#2D2D2D]">{event.requested_resource_type}</p>
+                      </div>
+                      <div>
+                        <p className="text-[#666666]">Created</p>
+                        <p className="font-medium text-[#2D2D2D]">
+                          {new Date(event.created_at).toLocaleDateString('en-GB')}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#666666]">Capacity</p>
+                        <p className="font-medium text-[#2D2D2D]">
+                          {event.min_participants} - {event.max_participants}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Registration Stats */}
+                  <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
+                    <h3 className="font-bold text-[#2D2D2D] mb-4">Capacity</h3>
+                    <div className="w-full bg-[#E8E8E8] rounded-full h-3 mb-2">
                       <div
-                        className="bg-[#8B1E26] h-2 rounded-full"
+                        className="bg-[#8B1E26] h-3 rounded-full transition-all"
                         style={{
-                          width: `${(event.registrations / event.maxCapacity) * 100}%`,
+                          width: `${Math.min(
+                            (event.registration_summary.confirmed / event.max_participants) * 100,
+                            100
+                          )}%`,
                         }}
                       />
                     </div>
-                    <p className="text-xs text-[#666666] mt-1">
-                      {event.registrations} / {event.maxCapacity}
+                    <p className="text-xs text-[#666666] text-center">
+                      {event.registration_summary.confirmed} / {event.max_participants} seats filled
                     </p>
                   </div>
-                </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </main>

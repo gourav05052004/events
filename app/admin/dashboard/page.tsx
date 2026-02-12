@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
@@ -28,35 +28,27 @@ const sidebarItems = [
 ];
 
 interface PendingEvent {
-  id: string;
+  _id?: string;
+  id?: string;
   title: string;
-  organizer: string;
-  date: string;
-  status: 'pending' | 'approved' | 'rejected';
-  venueType: string;
-  requestedCapacity: number;
+  organizer?: string;
+  date?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'pending' | 'approved' | 'rejected';
+  venueType?: string;
+  requestedCapacity?: number;
 }
 
-const pendingApprovals: PendingEvent[] = [
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    organizer: 'Entrepreneurship Club',
-    date: 'Mar 5, 2025',
-    status: 'pending',
-    venueType: 'Hall',
-    requestedCapacity: 300,
-  },
-  {
-    id: '5',
-    title: 'Photography Workshop',
-    organizer: 'Photography Club',
-    date: 'Mar 10, 2025',
-    status: 'pending',
-    venueType: 'Room',
-    requestedCapacity: 100,
-  },
-];
+interface DashboardStats {
+  totalEvents: number;
+  totalClubs: number;
+  totalVenues: number;
+  pendingEventsCount: number;
+  eventsByStatus: {
+    approved: number;
+    pending: number;
+    rejected: number;
+  };
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -64,6 +56,76 @@ export default function AdminDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<PendingEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventAction, setEventAction] = useState<'approve' | 'reject' | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingEvent[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalEvents: 0,
+    totalClubs: 0,
+    totalVenues: 0,
+    pendingEventsCount: 0,
+    eventsByStatus: { approved: 0, pending: 0, rejected: 0 },
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch dashboard data from APIs
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch events
+        const eventsRes = await fetch('/api/admin/events');
+        const eventsData = eventsRes.ok ? await eventsRes.json() : { data: [] };
+        const allEvents = eventsData.data || [];
+        
+        // Fetch clubs
+        const clubsRes = await fetch('/api/admin/clubs');
+        const clubsData = clubsRes.ok ? await clubsRes.json() : { data: [] };
+        const allClubs = clubsData.data || [];
+        
+        // Fetch venues
+        const venuesRes = await fetch('/api/admin/venues');
+        const venuesData = venuesRes.ok ? await venuesRes.json() : { data: [] };
+        const allVenues = venuesData.data || [];
+
+        // Count events by status
+        const eventsByStatus = {
+          approved: allEvents.filter((e: any) => e.status === 'APPROVED').length,
+          pending: allEvents.filter((e: any) => e.status === 'PENDING').length,
+          rejected: allEvents.filter((e: any) => e.status === 'REJECTED').length,
+        };
+
+        // Get pending events for approvals table
+        const pending = allEvents.filter((e: any) => e.status === 'PENDING').slice(0, 5);
+        const formattedPending = pending.map((event: any) => ({
+          _id: event._id,
+          id: event._id,
+          title: event.title,
+          organizer: event.club_name || 'Unknown',
+          date: event.date ? new Date(event.date).toLocaleDateString('en-GB') : 'TBD',
+          status: 'PENDING',
+          venueType: event.resource_type || 'Not Specified',
+          requestedCapacity: event.max_participants || 0,
+        }));
+
+        setPendingApprovals(formattedPending);
+        setDashboardStats({
+          totalEvents: allEvents.length,
+          totalClubs: allClubs.length,
+          totalVenues: allVenues.length,
+          pendingEventsCount: eventsByStatus.pending,
+          eventsByStatus,
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        // Set default values on error
+        setPendingApprovals([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const handleEventAction = (event: PendingEvent, action: 'approve' | 'reject') => {
     setSelectedEvent(event);
@@ -118,25 +180,25 @@ export default function AdminDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="Total Events"
-                value="47"
+                value={dashboardStats.totalEvents.toString()}
                 icon={<Calendar size={32} />}
                 color="primary"
-                trend={{ value: 12, direction: 'up' }}
+                trend={{ value: Math.max(0, dashboardStats.eventsByStatus.pending), direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Active Clubs"
-                value="23"
+                value={dashboardStats.totalClubs.toString()}
                 icon={<Users size={32} />}
                 color="success"
-                trend={{ value: 3, direction: 'up' }}
+                trend={{ value: Math.max(0, dashboardStats.totalClubs), direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Venues"
-                value="15"
+                value={dashboardStats.totalVenues.toString()}
                 icon={<Building2 size={32} />}
                 color="warning"
               />
@@ -144,7 +206,7 @@ export default function AdminDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="Pending Approval"
-                value="2"
+                value={dashboardStats.pendingEventsCount.toString()}
                 icon={<AlertCircle size={32} />}
                 color="danger"
               />
@@ -258,15 +320,15 @@ export default function AdminDashboard() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[#666666]">Approved Events</span>
-                  <span className="font-bold text-green-600">38</span>
+                  <span className="font-bold text-green-600">{dashboardStats.eventsByStatus.approved}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#666666]">Pending Review</span>
-                  <span className="font-bold text-yellow-600">2</span>
+                  <span className="font-bold text-yellow-600">{dashboardStats.eventsByStatus.pending}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[#666666]">Rejected Events</span>
-                  <span className="font-bold text-red-600">7</span>
+                  <span className="font-bold text-red-600">{dashboardStats.eventsByStatus.rejected}</span>
                 </div>
               </div>
             </div>

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const formattedEvents = events.map((event: any) => ({
       id: event._id.toString(),
       title: event.title,
-      date: new Date(event.date).toLocaleDateString('en-US', { 
+      date: new Date(event.date).toLocaleDateString('en-GB', { 
         year: 'numeric', 
         month: 'short', 
         day: 'numeric' 
