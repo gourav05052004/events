@@ -13,7 +13,6 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
   { label: 'Browse Events', href: '/student/events', active: true },
   { label: 'My Registrations', href: '/student/registrations' },
-  { label: 'Favorites', href: '/student/favorites' },
   { label: 'My Profile', href: '/student/profile' },
 ];
 
@@ -31,6 +30,7 @@ interface EventData {
   club_brand_color?: string;
   registrations: number;
   max_participants: number;
+  poster_url?: string;
 }
 
 export default function EventsPage() {
@@ -61,7 +61,7 @@ export default function EventsPage() {
             }),
             time: `${event.start_time} - ${event.end_time}`,
             location: event.location || 'TBD',
-            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
+            image: event.poster_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
             status: event.status.toLowerCase() as 'pending' | 'approved' | 'cancelled',
             attendees: event.registrations || 0,
             maxAttendees: event.max_participants,
@@ -88,7 +88,8 @@ export default function EventsPage() {
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.location.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const isApproved = event.status === 'approved';
+    return matchesSearch && matchesCategory && isApproved;
   });
 
   const container = {

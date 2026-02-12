@@ -140,6 +140,7 @@ export default function LoginPage() {
 
         const data = await response.json();
         window.localStorage.setItem('studentId', data.student.id);
+        window.localStorage.setItem('token', data.token);
         toast.success('Login successful! Redirecting...');
         router.push('/student/dashboard');
         return;

@@ -12,7 +12,6 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
   { label: 'Browse Events', href: '/student/events' },
   { label: 'My Registrations', href: '/student/registrations' },
-  { label: 'Favorites', href: '/student/favorites' },
   { label: 'My Profile', href: '/student/profile', active: true },
 ];
 

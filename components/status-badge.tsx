@@ -16,8 +16,8 @@ const statusConfig = {
     label: 'Pending',
   },
   approved: {
-    bg: 'bg-green-100',
-    text: 'text-green-700',
+    bg: 'bg-[#10B981]',
+    text: 'text-white',
     label: 'Approved',
   },
   cancelled: {
@@ -44,7 +44,11 @@ const sizeConfig = {
 };
 
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || {
+    bg: 'bg-gray-100',
+    text: 'text-gray-700',
+    label: status?.charAt(0).toUpperCase() + status?.slice(1) || 'Unknown',
+  };
 
   return (
     <motion.div

@@ -1,57 +1,32 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
-import { Calendar, Trash2 } from 'lucide-react';
+import { Calendar, Trash2, Loader } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
   { label: 'Browse Events', href: '/student/events' },
   { label: 'My Registrations', href: '/student/registrations', active: true },
-  { label: 'Favorites', href: '/student/favorites' },
   { label: 'My Profile', href: '/student/profile' },
 ];
 
-const registeredEvents = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM - 5:00 PM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-    attendees: 245,
-    maxAttendees: 500,
-  },
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    date: 'Feb 20, 2025',
-    time: '2:00 PM - 6:00 PM',
-    location: 'Lab 101',
-    image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-    attendees: 120,
-    maxAttendees: 200,
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    date: 'Feb 25, 2025',
-    time: '8:00 AM - 3:00 PM',
-    location: 'Sports Ground',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-    attendees: 600,
-    maxAttendees: 800,
-  },
-];
+interface EventData {
+  _id: string;
+  title: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  poster_url?: string;
+  registrations: number;
+  max_participants: number;
+}
 
 interface RegistrationItem {
   id: string;
@@ -60,40 +35,101 @@ interface RegistrationItem {
   registeredOn: string;
   status: 'confirmed' | 'waitlisted' | 'cancelled';
   ticketId: string;
+  location: string;
+  time: string;
+  image?: string;
+  attendees: number;
+  maxAttendees: number;
 }
-
-const registrations: RegistrationItem[] = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    registeredOn: 'Jan 20, 2025',
-    status: 'confirmed',
-    ticketId: 'TKT-001-2025',
-  },
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    date: 'Feb 20, 2025',
-    registeredOn: 'Jan 22, 2025',
-    status: 'confirmed',
-    ticketId: 'TKT-002-2025',
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    date: 'Feb 25, 2025',
-    registeredOn: 'Jan 18, 2025',
-    status: 'confirmed',
-    ticketId: 'TKT-003-2025',
-  },
-];
 
 export default function StudentRegistrationsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [registrations, setRegistrations] = useState(registeredEvents);
+  const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchStudentRegistrations();
+  }, []);
+
+  const fetchStudentRegistrations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login first');
+        router.push('/login');
+        return;
+      }
+
+      // Fetch student's registrations
+      const registrationsResponse = await fetch('/api/student/registrations', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!registrationsResponse.ok) {
+        if (registrationsResponse.status === 401) {
+          toast.error('Your session expired. Please login again');
+          router.push('/login');
+          return;
+        }
+        throw new Error('Failed to fetch registrations');
+      }
+
+      const registrationsData = await registrationsResponse.json();
+
+      // Transform API data directly without needing to fetch events separately
+      const enrichedRegistrations: RegistrationItem[] = registrationsData.registrations
+        .map((reg: any) => {
+          const event = reg.event;
+          if (!event) return null;
+
+          const eventDate = new Date(event.date).toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+
+          const registeredDate = new Date(reg.registered_at).toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+
+          return {
+            id: event._id,
+            title: event.title,
+            date: eventDate,
+            registeredOn: registeredDate,
+            status: (reg.status.toLowerCase() === 'confirmed' ? 'confirmed' : 'waitlisted') as 'confirmed' | 'waitlisted',
+            ticketId: `TKT-${reg._id.toString().slice(-8).toUpperCase()}`,
+            location: event.location,
+            time: `${event.start_time} - ${event.end_time}`,
+            image: event.poster_url,
+            attendees: event.registrations,
+            maxAttendees: event.max_participants,
+          };
+        })
+        .filter((reg: RegistrationItem | null): reg is RegistrationItem => reg !== null);
+
+      setRegistrations(enrichedRegistrations);
+    } catch (err) {
+      const errorMsg = (err as Error).message || 'Failed to load registrations';
+      setError(errorMsg);
+      toast.error(errorMsg);
+      console.error('Fetch registrations error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,24 +144,41 @@ export default function StudentRegistrationsPage() {
     }
   };
 
-  const handleCancelRegistration = async (registrationId: string) => {
+  const handleCancelRegistration = async (eventId: string) => {
     if (!confirm('Are you sure you want to cancel this registration?')) return;
 
     try {
-      // Call API to cancel registration
-      const response = await fetch(`/api/student/registrations/${registrationId}`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login first');
+        router.push('/login');
+        return;
+      }
+
+      // Cancel registration
+      const response = await fetch(`/api/student/events/${eventId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
       });
 
-      if (response.ok) {
-        setRegistrations(registrations.filter((r) => r.id !== registrationId));
-        toast.success('Registration cancelled successfully');
-      } else {
-        toast.error('Failed to cancel registration');
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error('Your session expired. Please login again');
+          router.push('/login');
+          return;
+        }
+        throw new Error('Failed to cancel registration');
       }
+
+      setRegistrations(registrations.filter((r) => r.id !== eventId));
+      toast.success('Registration cancelled successfully');
     } catch (error) {
+      const errorMsg = (error as Error).message;
+      toast.error(errorMsg);
       console.error('Cancel error:', error);
-      toast.error('Error cancelling registration');
     }
   };
 
@@ -134,7 +187,6 @@ export default function StudentRegistrationsPage() {
       <Navbar title="My Registrations" userRole="student" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
@@ -151,39 +203,73 @@ export default function StudentRegistrationsPage() {
             <p className="text-[#666666]">View and manage all your event registrations.</p>
           </motion.div>
 
+          {/* Loading State */}
+          {loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex items-center justify-center py-12"
+            >
+              <Loader className="w-8 h-8 text-[#8B1E26] animate-spin mr-3" />
+              <p className="text-[#666666] text-lg">Loading your registrations...</p>
+            </motion.div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-red-50 border border-red-200 rounded-lg p-6 text-center"
+            >
+              <p className="text-red-700 font-bold mb-2">Failed to Load Registrations</p>
+              <p className="text-red-600 mb-4">{error}</p>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={fetchStudentRegistrations}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700"
+              >
+                Try Again
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* View Toggle */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="flex gap-3 mb-8"
-          >
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('cards')}
-              className={`px-6 py-2 rounded-lg font-bold transition-all ${
-                viewMode === 'cards'
-                  ? 'bg-[#8B1E26] text-white'
-                  : 'bg-white border border-[#E8E8E8] text-[#2D2D2D]'
-              }`}
+          {!loading && registrations.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex gap-3 mb-8"
             >
-              Cards View
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setViewMode('table')}
-              className={`px-6 py-2 rounded-lg font-bold transition-all ${
-                viewMode === 'table'
-                  ? 'bg-[#8B1E26] text-white'
-                  : 'bg-white border border-[#E8E8E8] text-[#2D2D2D]'
-              }`}
-            >
-              Table View
-            </motion.button>
-          </motion.div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('cards')}
+                className={`px-6 py-2 rounded-lg font-bold transition-all ${
+                  viewMode === 'cards'
+                    ? 'bg-[#8B1E26] text-white'
+                    : 'bg-white border border-[#E8E8E8] text-[#2D2D2D]'
+                }`}
+              >
+                Cards View
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewMode('table')}
+                className={`px-6 py-2 rounded-lg font-bold transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-[#8B1E26] text-white'
+                    : 'bg-white border border-[#E8E8E8] text-[#2D2D2D]'
+                }`}
+              >
+                Table View
+              </motion.button>
+            </motion.div>
+          )}
 
           {/* Cards View */}
-          {viewMode === 'cards' && (
+          {!loading && viewMode === 'cards' && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -196,14 +282,25 @@ export default function StudentRegistrationsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
+                  <EventCard
+                    id={event.id}
+                    title={event.title}
+                    date={event.date}
+                    time={event.time || 'Time TBA'}
+                    location={event.location || 'Location TBA'}
+                    image={event.image || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop'}
+                    status={event.status === 'confirmed' ? 'approved' : 'pending'}
+                    attendees={event.attendees}
+                    maxAttendees={event.maxAttendees}
+                    onClick={() => router.push(`/event/${event.id}`)}
+                  />
                 </motion.div>
               ))}
             </motion.div>
           )}
 
           {/* Table View */}
-          {viewMode === 'table' && (
+          {!loading && viewMode === 'table' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -231,7 +328,8 @@ export default function StudentRegistrationsPage() {
                         animate={{ opacity: 1 }}
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ backgroundColor: '#F8F9FA' }}
-                        className="border-b border-[#E8E8E8]"
+                        className="border-b border-[#E8E8E8] cursor-pointer"
+                        onClick={() => router.push(`/event/${reg.id}`)}
                       >
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{reg.title}</td>
                         <td className="px-6 py-4 text-[#666666]">{reg.date}</td>
@@ -252,7 +350,10 @@ export default function StudentRegistrationsPage() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={() => handleCancelRegistration(reg.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelRegistration(reg.id);
+                            }}
                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                           >
                             <Trash2 size={18} />
@@ -267,7 +368,7 @@ export default function StudentRegistrationsPage() {
           )}
 
           {/* No Registrations Message */}
-          {registrations.length === 0 && (
+          {!loading && registrations.length === 0 && !error && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

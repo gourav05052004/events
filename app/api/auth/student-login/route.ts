@@ -1,6 +1,7 @@
 import connectDB from '@/lib/db';
 import Student from '@/models/Student';
 import { verifyPassword } from '@/lib/auth-utils';
+import { generateToken } from '@/lib/jwt-utils';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
@@ -31,9 +32,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate JWT token
+    const token = generateToken({
+      id: student._id.toString(),
+      email: student.email,
+      role: 'student',
+    });
+
     const response = NextResponse.json(
       {
         message: 'Login successful',
+        token,
         student: {
           id: student._id,
           name: student.name,
@@ -45,7 +54,7 @@ export async function POST(request: Request) {
       { status: 200 }
     );
 
-    response.cookies.set('student_token', student._id.toString(), {
+    response.cookies.set('student_token', token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',

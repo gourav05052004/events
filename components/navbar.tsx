@@ -10,7 +10,8 @@ interface NavbarProps {
   showBackButton?: boolean;
   onBackClick?: () => void;
   userRole?: 'student' | 'club' | 'admin';
-  onMenuClick?: () => void; // Add this line
+  onMenuClick?: () => void;
+  hideLoginButton?: boolean;
 }
 
 export function Navbar({ 
@@ -18,7 +19,8 @@ export function Navbar({
   showBackButton = false, 
   onBackClick, 
   userRole, 
-  onMenuClick // Add this prop
+  onMenuClick,
+  hideLoginButton = false
 }: NavbarProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -208,6 +210,7 @@ export function Navbar({
                         window.localStorage.removeItem('clubId');
                         window.localStorage.removeItem('studentId');
                         window.localStorage.removeItem('adminId');
+                        window.localStorage.removeItem('token');
                         document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                         document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                         document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
@@ -222,7 +225,7 @@ export function Navbar({
                   </motion.div>
                 )}
               </div>
-            ) : (
+            ) : !hideLoginButton ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -231,7 +234,7 @@ export function Navbar({
               >
                 Login
               </motion.button>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button - Only show if onMenuClick is NOT provided */}

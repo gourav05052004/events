@@ -40,6 +40,8 @@ export async function POST(request: Request) {
       adminId: admin._id.toString(),
       email: admin.email,
       name: admin.name,
+      sub: undefined,
+      id: undefined
     });
 
     const response = NextResponse.json(

@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
           event_type: event.event_type,
           resource_type: event.requested_resource_type,
           description: event.description,
+          poster_url: event.poster_url || '',
           created_at: event.created_at,
         };
       })

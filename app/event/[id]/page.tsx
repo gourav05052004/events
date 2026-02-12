@@ -1,77 +1,214 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { StatusBadge } from '@/components/status-badge';
 import { Modal } from '@/components/modal';
-import { Calendar, MapPin, Users, Share2, Heart, CheckCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, Share2, Heart, CheckCircle, Loader, AlertCircle, X, Plus } from 'lucide-react';
 
-const eventDetails = {
-  '1': {
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM - 5:00 PM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=400&fit=crop',
-    status: 'approved' as const,
-    attendees: 245,
-    maxAttendees: 500,
-    description: `The Annual Tech Summit 2025 is the biggest technology conference on campus, bringing together industry experts, 
-    innovators, and tech enthusiasts. This event features keynote speeches, panel discussions, hands-on workshops, and networking opportunities.
-    
-    Participants will get to learn about the latest trends in AI, cloud computing, cybersecurity, and web development.`,
-    agenda: [
-      { time: '10:00 AM', title: 'Registration & Welcome Coffee' },
-      { time: '10:30 AM', title: 'Keynote: Future of AI' },
-      { time: '11:30 AM', title: 'Panel Discussion: Tech Careers' },
-      { time: '12:30 PM', title: 'Lunch Break' },
-      { time: '1:30 PM', title: 'Workshop Track' },
-      { time: '3:00 PM', title: 'Networking Session' },
-      { time: '5:00 PM', title: 'Closing Remarks' },
-    ],
-    organizer: 'Computer Science Club',
-    tags: ['Technology', 'Career', 'Networking'],
-  },
-};
+interface EventDetail {
+  _id: string;
+  title: string;
+  description: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  status: 'approved' | 'pending' | 'cancelled';
+  club_name: string;
+  registrations: number;
+  max_participants: number;
+  event_type: string;
+  poster_url?: string;
+}
+
+interface GroupMember {
+  id: string;
+  name: string;
+  email: string;
+  rollNumber?: string;
+}
 
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.id as string;
 
-  const event = eventDetails[eventId as keyof typeof eventDetails] || {
-    title: 'Event Not Found',
-    date: '',
-    time: '',
-    location: '',
-    image: 'https://via.placeholder.com/800x400',
-    status: 'cancelled' as const,
-    attendees: 0,
-    maxAttendees: 0,
-    description: 'This event could not be found.',
-    agenda: [],
-    organizer: '',
-    tags: [],
-  };
-
+  const [event, setEvent] = useState<EventDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newMember, setNewMember] = useState({ name: '', email: '', rollNumber: '' });
 
-  const handleRegister = () => {
+  useEffect(() => {
+    fetchEventDetails();
+    checkRegistrationStatus();
+  }, [eventId]);
+
+  const checkRegistrationStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsRegistered(false);
+        return;
+      }
+
+      const response = await fetch(`/api/student/events/${eventId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIsRegistered(data.isRegistered || false);
+      } else {
+        setIsRegistered(false);
+      }
+    } catch (err) {
+      console.error('Error checking registration status:', err);
+      setIsRegistered(false);
+    }
+  };
+
+  const fetchEventDetails = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`/api/admin/events`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+
+      const data = await response.json();
+      const foundEvent = data.data.find((e: EventDetail) => e._id === eventId);
+      
+      if (!foundEvent) {
+        throw new Error('Event not found');
+      }
+
+      setEvent(foundEvent);
+    } catch (err) {
+      const errorMsg = (err as Error).message || 'Failed to load event details';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    const isGroupEvent = event?.event_type?.toLowerCase().includes('group');
+    
     if (registrationStep === 1) {
-      setRegistrationStep(2);
-      toast('Please confirm your registration', { icon: 'ℹ️' });
-    } else {
+      if (isGroupEvent) {
+        setRegistrationStep(2);
+        toast('Add your group members', { icon: 'ℹ️' });
+      } else {
+        // For individual events, go straight to confirmation
+        setRegistrationStep(3);
+        toast('Ready to confirm registration', { icon: 'ℹ️' });
+      }
+    } else if (registrationStep === 2) {
+      // Confirm group members and move to final step
+      if (groupMembers.length === 0) {
+        toast.error('Please add at least one group member');
+        return;
+      }
+      setRegistrationStep(3);
+      toast('Ready to confirm registration', { icon: 'ℹ️' });
+    } else if (registrationStep === 3) {
+      // Submit registration
+      await submitRegistration();
+    }
+  };
+
+  const addGroupMember = () => {
+    if (!newMember.name || !newMember.email) {
+      toast.error('Please fill in name and email');
+      return;
+    }
+    const member: GroupMember = {
+      id: Date.now().toString(),
+      name: newMember.name,
+      email: newMember.email,
+      rollNumber: newMember.rollNumber || undefined,
+    };
+    setGroupMembers([...groupMembers, member]);
+    setNewMember({ name: '', email: '', rollNumber: '' });
+    toast.success('Member added to group');
+  };
+
+  const removeGroupMember = (id: string) => {
+    setGroupMembers(groupMembers.filter((m) => m.id !== id));
+    toast.success('Member removed from group');
+  };
+
+  const submitRegistration = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login first to register for events');
+        router.push('/login');
+        return;
+      }
+
+      const isGroupEvent = event?.event_type?.toLowerCase().includes('group');
+      
+      const registrationData = {
+        eventId: event?._id,
+        eventTitle: event?.title,
+        registrationType: isGroupEvent ? 'group' : 'individual',
+        members: isGroupEvent ? groupMembers : [],
+      };
+
+      const response = await fetch('/api/student/events/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(registrationData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 401) {
+          toast.error('Your session expired. Please login again');
+          router.push('/login');
+          return;
+        }
+        throw new Error(data.error || 'Failed to register for event');
+      }
+
       setIsRegistered(true);
       setShowConfirmation(true);
-      toast.success('Registration confirmed! Check your email.');
-      setTimeout(() => setShowConfirmation(false), 3000);
-      setRegistrationStep(1);
+      toast.success('Successfully registered for the event!');
+      setTimeout(() => {
+        setShowConfirmation(false);
+        setRegistrationStep(1);
+        setGroupMembers([]);
+      }, 3000);
+    } catch (err) {
+      const errorMsg = (err as Error).message;
+      toast.error(errorMsg);
+      console.error('Registration error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -80,28 +217,111 @@ export default function EventDetailPage() {
     toast.success(isFavorited ? 'Removed from favorites' : 'Added to favorites');
   };
 
-  const handleCancelRegistration = () => {
-    if (confirm('Are you sure you want to cancel your registration?')) {
+  const handleCancelRegistration = async () => {
+    if (!confirm('Are you sure you want to cancel your registration?')) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please login first');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/student/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (response.status === 401) {
+          toast.error('Your session expired. Please login again');
+          router.push('/login');
+          return;
+        }
+        throw new Error(data.error || 'Failed to cancel registration');
+      }
+
       setIsRegistered(false);
       setRegistrationStep(1);
-      toast.success('Registration cancelled');
+      toast.success('Registration cancelled successfully');
+    } catch (err) {
+      const errorMsg = (err as Error).message;
+      toast.error(errorMsg);
+      console.error('Cancel registration error:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const registrationPercentage = Math.round((event.attendees / event.maxAttendees) * 100);
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA]">
+        <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
+        <div className="flex items-center justify-center h-96">
+          <Loader className="w-8 h-8 text-[#8B1E26] animate-spin" />
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !event) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA]">
+        <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
+        <div className="max-w-5xl mx-auto px-4 py-12 flex items-center justify-center">
+          <div className="bg-white rounded-xl p-8 border border-red-200 w-full max-w-md">
+            <AlertCircle className="text-red-600 mx-auto mb-4" size={48} />
+            <h2 className="text-2xl font-bold text-[#2D2D2D] text-center mb-2">Event Not Found</h2>
+            <p className="text-[#666666] text-center mb-6">{error || 'Could not load event details'}</p>
+            <button
+              onClick={() => router.back()}
+              className="w-full px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-bold hover:bg-[#6B1520]"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const registrationPercentage = Math.round((event.registrations / event.max_participants) * 100);
+  const eventDate = new Date(event.date).toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} />
+      <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
         {/* Hero Image */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-xl overflow-hidden mb-8 h-96"
+          className="relative rounded-xl overflow-hidden mb-8 h-96 bg-gradient-to-br from-[#8B1E26] to-[#6B1520]"
         >
-          <img src={event.image || "/placeholder.svg"} alt={event.title} className="w-full h-full object-cover" />
+          {event.poster_url ? (
+            <img
+              src={event.poster_url}
+              alt={event.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : null}
+          <div className="absolute inset-0 bg-black/30"></div>
+          <div className="relative w-full h-full flex items-center justify-center">
+            
+          </div>
           <div className="absolute top-4 right-4 flex gap-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
@@ -133,11 +353,10 @@ export default function EventDetailPage() {
           >
             {/* Title & Status */}
             <div className="mb-6">
-              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex items-start justify-between gap-4 mb-4">
                 <h1 className="text-4xl font-bold text-[#2D2D2D] flex-1">{event.title}</h1>
-                <StatusBadge status={event.status} size="lg" />
-              </div>
-              <p className="text-[#666666]">Organized by {event.organizer}</p>
+                </div>
+              <p className="text-[#666666]">Organized by {event.club_name}</p>
             </div>
 
             {/* Event Details */}
@@ -147,14 +366,14 @@ export default function EventDetailPage() {
                   <Calendar className="text-[#8B1E26]" size={24} />
                   <div>
                     <p className="text-sm text-[#666666]">Date</p>
-                    <p className="font-bold text-[#2D2D2D]">{event.date}</p>
+                    <p className="font-bold text-[#2D2D2D]">{eventDate}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Calendar className="text-[#8B1E26]" size={24} />
                   <div>
                     <p className="text-sm text-[#666666]">Time</p>
-                    <p className="font-bold text-[#2D2D2D]">{event.time}</p>
+                    <p className="font-bold text-[#2D2D2D]">{event.start_time} - {event.end_time}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -169,7 +388,7 @@ export default function EventDetailPage() {
                   <div>
                     <p className="text-sm text-[#666666]">Capacity</p>
                     <p className="font-bold text-[#2D2D2D]">
-                      {event.attendees} / {event.maxAttendees} registered
+                      {event.registrations} / {event.max_participants} registered
                     </p>
                   </div>
                 </div>
@@ -190,43 +409,20 @@ export default function EventDetailPage() {
             {/* Description */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
               <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">About This Event</h2>
-              <p className="text-[#666666] leading-relaxed mb-6 whitespace-pre-line">
+              <p className="text-[#666666] leading-relaxed whitespace-pre-line">
                 {event.description}
               </p>
             </motion.div>
 
             {/* Tags */}
-            <div className="flex flex-wrap gap-2 mb-8">
-              {event.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-4 py-2 bg-[#8B1E26]/10 text-[#8B1E26] rounded-full text-sm font-medium"
-                >
-                  {tag}
-                </span>
-              ))}
+            <div className="flex flex-wrap gap-2 my-8">
+              <span className="px-4 py-2 bg-[#8B1E26]/10 text-[#8B1E26] rounded-full text-sm font-medium">
+                {event.event_type}
+              </span>
+              <span className="px-4 py-2 bg-[#10B981]/20 text-[#10B981] rounded-full text-sm font-medium">
+                {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+              </span>
             </div>
-
-            {/* Agenda */}
-            {event.agenda.length > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-                <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">Event Agenda</h2>
-                <div className="space-y-3">
-                  {event.agenda.map((agendaItem, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex gap-4 p-4 bg-white border border-[#E8E8E8] rounded-lg"
-                    >
-                      <div className="font-bold text-[#8B1E26] min-w-fit">{agendaItem.time}</div>
-                      <div className="text-[#2D2D2D]">{agendaItem.title}</div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
           </motion.div>
 
           {/* Sidebar - Registration */}
@@ -281,18 +477,175 @@ export default function EventDetailPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-[#666666] text-sm mb-6">
-                        {event.maxAttendees - event.attendees} seats available
-                      </p>
+                      {registrationStep === 1 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <p className="text-[#666666] text-sm mb-6">
+                            {event.max_participants - event.registrations} seats available
+                          </p>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleRegister}
+                            disabled={isSubmitting}
+                            className="w-full px-4 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                          >
+                            {isSubmitting ? 'Processing...' : 'Register Now'}
+                          </motion.button>
+                        </motion.div>
+                      )}
 
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleRegister}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all"
-                      >
-                        {registrationStep === 1 ? 'Register Now' : 'Confirm Registration'}
-                      </motion.button>
+                      {registrationStep === 2 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-4"
+                        >
+                          <div className="bg-[#F8F9FA] p-4 rounded-lg">
+                            <h4 className="font-semibold text-[#2D2D2D] mb-3">Add Group Members</h4>
+                            <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                              {groupMembers.map((member) => (
+                                <div
+                                  key={member.id}
+                                  className="flex items-center justify-between bg-white p-3 rounded-lg border border-[#E8E8E8]"
+                                >
+                                  <div className="flex-1">
+                                    <p className="font-medium text-[#2D2D2D]">{member.name}</p>
+                                    <p className="text-xs text-[#666666]">{member.email}</p>
+                                  </div>
+                                  <button
+                                    onClick={() => removeGroupMember(member.id)}
+                                    className="text-red-500 hover:text-red-700 ml-2"
+                                  >
+                                    <X size={18} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="bg-white border border-[#E8E8E8] rounded-lg p-3 space-y-2 mb-3">
+                              <input
+                                type="text"
+                                placeholder="Member name"
+                                value={newMember.name}
+                                onChange={(e) =>
+                                  setNewMember({ ...newMember, name: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-[#E8E8E8] rounded-lg text-sm focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent outline-none"
+                              />
+                              <input
+                                type="email"
+                                placeholder="Member email"
+                                value={newMember.email}
+                                onChange={(e) =>
+                                  setNewMember({ ...newMember, email: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-[#E8E8E8] rounded-lg text-sm focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent outline-none"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Roll number (optional)"
+                                value={newMember.rollNumber}
+                                onChange={(e) =>
+                                  setNewMember({ ...newMember, rollNumber: e.target.value })
+                                }
+                                className="w-full px-3 py-2 border border-[#E8E8E8] rounded-lg text-sm focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent outline-none"
+                              />
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={addGroupMember}
+                                className="w-full px-3 py-2 bg-[#8B1E26]/10 text-[#8B1E26] rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#8B1E26]/20 transition-all"
+                              >
+                                <Plus size={16} />
+                                Add Member
+                              </motion.button>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                setRegistrationStep(1);
+                                setGroupMembers([]);
+                                setNewMember({ name: '', email: '', rollNumber: '' });
+                              }}
+                              className="flex-1 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold hover:bg-[#8B1E26]/5 transition-all"
+                            >
+                              Back
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={handleRegister}
+                              disabled={isSubmitting || groupMembers.length === 0}
+                              className="flex-1 px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                            >
+                              {isSubmitting ? 'Processing...' : 'Continue'}
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {registrationStep === 3 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-4"
+                        >
+                          <div className="bg-[#F8F9FA] p-4 rounded-lg">
+                            <h4 className="font-semibold text-[#2D2D2D] mb-3">Confirm Registration</h4>
+                            <p className="text-sm text-[#666666] mb-3">
+                              {event?.event_type?.toLowerCase().includes('group')
+                                ? `You are registering with ${groupMembers.length} ${
+                                    groupMembers.length === 1 ? 'member' : 'members'
+                                  }`
+                                : 'Individual registration'}
+                            </p>
+                            {event?.event_type?.toLowerCase().includes('group') && (
+                              <div className="space-y-2">
+                                {groupMembers.map((member) => (
+                                  <div
+                                    key={member.id}
+                                    className="text-xs bg-white p-2 rounded border border-[#E8E8E8]"
+                                  >
+                                    <p className="font-medium text-[#2D2D2D]">{member.name}</p>
+                                    <p className="text-[#666666]">{member.email}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => {
+                                setRegistrationStep(
+                                  event?.event_type?.toLowerCase().includes('group') ? 2 : 1
+                                );
+                              }}
+                              className="flex-1 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold hover:bg-[#8B1E26]/5 transition-all"
+                            >
+                              Back
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={handleRegister}
+                              disabled={isSubmitting}
+                              className="flex-1 px-4 py-2 bg-[#10B981] text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                            >
+                              {isSubmitting ? 'Confirming...' : 'Confirm Registration'}
+                            </motion.button>
+                          </div>
+                        </motion.div>
+                      )}
                     </>
                   )}
                 </>
@@ -317,11 +670,30 @@ export default function EventDetailPage() {
             <CheckCircle className="text-[#10B981]" size={64} />
           </motion.div>
           <h2 className="text-2xl font-bold text-[#2D2D2D] mb-2">Registration Successful!</h2>
-          <p className="text-[#666666]">
-            You have been successfully registered for {event.title}. Check your email for confirmation details.
+          <p className="text-[#666666] mb-4">
+            You have been successfully registered for <span className="font-semibold">{event.title}</span>. 
+          </p>
+          
+          {event?.event_type?.toLowerCase().includes('group') && groupMembers.length > 0 && (
+            <div className="bg-[#F8F9FA] p-4 rounded-lg mb-4 text-left">
+              <h3 className="font-semibold text-[#2D2D2D] mb-2">Group Members</h3>
+              <ul className="space-y-2">
+                {groupMembers.map((member) => (
+                  <li key={member.id} className="text-sm text-[#666666] bg-white p-2 rounded">
+                    <p className="font-medium text-[#2D2D2D]">{member.name}</p>
+                    <p className="text-xs">{member.email}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <p className="text-sm text-[#666666]">
+            Check your email for confirmation details and event information.
           </p>
         </motion.div>
       </Modal>
     </main>
   );
 }
+

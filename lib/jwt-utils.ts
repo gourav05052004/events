@@ -7,9 +7,12 @@ const TOKEN_EXPIRY: SignOptions['expiresIn'] =
   (process.env.JWT_EXPIRY as SignOptions['expiresIn']) ?? '7d';
 
 export interface JWTPayload {
-  adminId: string;
+  sub?: any;
+  id?: string;
+  adminId?: string;
   email: string;
-  name: string;
+  name?: string;
+  role?: string;
 }
 
 /**
