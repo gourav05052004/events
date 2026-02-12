@@ -120,17 +120,36 @@ export default function LoginPage() {
       }
     }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Navigate based on role
+    // Student login with database validation
     if (role === 'student') {
-      toast.success('Login successful! Redirecting...');
-      router.push('/student/dashboard');
-    } else if (role === 'club') {
-      router.push('/club/dashboard');
-    } else {
-      router.push('/admin/dashboard');
+      try {
+        const response = await fetch('/api/auth/student-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          const errorMsg = data?.error || 'Login failed';
+          toast.error(errorMsg);
+          setLoginError(errorMsg);
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        window.localStorage.setItem('studentId', data.student.id);
+        toast.success('Login successful! Redirecting...');
+        router.push('/student/dashboard');
+        return;
+      } catch (error) {
+        console.error('Student login failed:', error);
+        toast.error('Login failed. Please try again.');
+        setLoginError('Login failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
     }
   };
 
@@ -329,21 +348,23 @@ export default function LoginPage() {
               )}
             </form>
 
-            {/* Sign Up Link */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-center text-[#666666] mt-6"
-            >
-              Don't have an account?{' '}
-              <button
-                onClick={() => router.push('/signup')}
-                className="text-[#8B1E26] hover:underline font-bold"
+            {/* Sign Up Link - Only for Students */}
+            {role === 'student' && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="text-center text-[#666666] mt-6"
               >
-                Sign up now
-              </button>
-            </motion.p>
+                Don't have an account?{' '}
+                <button
+                  onClick={() => router.push('/signup')}
+                  className="text-[#8B1E26] hover:underline font-bold"
+                >
+                  Sign up now
+                </button>
+              </motion.p>
+            )}
 
             {/* Back to Home */}
             <motion.button

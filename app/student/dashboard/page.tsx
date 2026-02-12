@@ -83,7 +83,6 @@ export default function StudentDashboard() {
       <Navbar title="Student Dashboard" userRole="student" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />

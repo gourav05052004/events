@@ -7,6 +7,7 @@ export interface IStudent extends Document {
   roll_number: string;
   department: string;
   batch: string;
+  avatar?: string;
   created_at: Date;
 }
 
@@ -18,6 +19,7 @@ const studentSchema = new Schema<IStudent>(
     roll_number: { type: String, required: true, unique: true },
     department: { type: String, required: true },
     batch: { type: String, required: true },
+    avatar: { type: String, default: null },
     created_at: { type: Date, default: Date.now },
   },
   { timestamps: false, collection: 'students' }

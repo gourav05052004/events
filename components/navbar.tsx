@@ -43,7 +43,6 @@ export function Navbar({
     student: [
       { label: 'Browse Events', href: '/student/events' },
       { label: 'My Registrations', href: '/student/registrations' },
-      { label: 'Profile', href: '/student/profile' },
     ],
     club: [
       { label: 'My Events', href: '/club/events' },
@@ -53,7 +52,6 @@ export function Navbar({
       { label: 'Dashboard', href: '/admin/dashboard' },
       { label: 'Events', href: '/admin/events' },
       { label: 'Clubs', href: '/admin/clubs' },
-      { label: 'Profile', href: '/admin/settings' },
     ],
   };
 
@@ -133,22 +131,41 @@ export function Navbar({
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50"
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
                   >
-                    {userRole === 'admin' && (
-                      <>
-                        <button
-                          onClick={() => {
-                            router.push('/admin/settings');
-                            setProfileDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8]"
-                        >
-                          <User size={16} />
-                          Settings
-                        </button>
-                      </>
+                    {/* Profile Info Header */}
+                    <div className="bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
+                      <p className="text-sm font-semibold">My Account</p>
+                    </div>
+
+                    {/* View Profile Option */}
+                    {userRole === 'student' && (
+                      <button
+                        onClick={() => {
+                          router.push('/student/profile');
+                          setProfileDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
+                      >
+                        <User size={16} />
+                        View Profile
+                      </button>
                     )}
+
+                    {/* Settings Option */}
+                    {userRole === 'admin' && (
+                      <button
+                        onClick={() => {
+                          router.push('/admin/settings');
+                          setProfileDropdown(false);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
+                      >
+                        <User size={16} />
+                        Settings
+                      </button>
+                    )}
+
                     {userRole === 'club' && (
                       <>
                         <button
@@ -156,7 +173,7 @@ export function Navbar({
                             router.push('/club/dashboard');
                             setProfileDropdown(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2"
+                          className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
                         >
                           <User size={16} />
                           Dashboard
@@ -166,7 +183,7 @@ export function Navbar({
                             router.push('/club/settings');
                             setProfileDropdown(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2"
+                          className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
                         >
                           <User size={16} />
                           Settings
@@ -176,22 +193,28 @@ export function Navbar({
                             router.push('/club/team');
                             setProfileDropdown(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8]"
+                          className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
                         >
                           <User size={16} />
-                          Team
+                          Team Management
                         </button>
                       </>
                     )}
+
+                    {/* Logout Option */}
                     <button
                       onClick={() => {
+                        // Clear all auth tokens and data
                         window.localStorage.removeItem('clubId');
+                        window.localStorage.removeItem('studentId');
+                        window.localStorage.removeItem('adminId');
                         document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                         document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                         setProfileDropdown(false);
                         router.push('/login');
                       }}
-                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors font-medium"
                     >
                       <LogOut size={16} />
                       Logout
