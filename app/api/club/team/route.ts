@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const club = await Club.findById(clubId)
       .select('faculty_coordinator_name faculty_coordinator_email faculty_coordinator_phone faculty_coordinator_department faculty_coordinator_office faculty_coordinator_image president_name president_email president_phone president_department president_office president_image')
-      .lean();
+      .lean() as any;
 
     if (!club) {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
 
     const contentType = request.headers.get('content-type') || '';
     let clubId: string;
-    let memberType: string;
+    let memberType: string = '';
     let updateData: any = {};
     let imageFile: File | null = null;
 
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
       clubId,
       { $set: updateData },
       { new: true, runValidators: true }
-    ).select('faculty_coordinator_name faculty_coordinator_email faculty_coordinator_phone faculty_coordinator_department faculty_coordinator_office faculty_coordinator_image president_name president_email president_phone president_department president_office president_image');
+    ).select('faculty_coordinator_name faculty_coordinator_email faculty_coordinator_phone faculty_coordinator_department faculty_coordinator_office faculty_coordinator_image president_name president_email president_phone president_department president_office president_image') as any;
 
     if (!updatedClub) {
       return NextResponse.json(

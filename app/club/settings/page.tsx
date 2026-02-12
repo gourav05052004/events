@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { InputField, SelectField, TextareaField } from '@/components/form-field';
+import toast from 'react-hot-toast';
 import {
   Settings,
   Building2,
@@ -13,6 +14,7 @@ import {
   Save,
   CheckCircle,
   AlertCircle,
+  Loader,
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -32,14 +34,14 @@ export default function ClubSettingsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
   const [saveStatus, setSaveStatus] = useState<SaveState>('idle');
+  const [isLoading, setIsLoading] = useState(true);
 
   const [profileSettings, setProfileSettings] = useState({
-    clubName: 'Tech Club',
-    email: 'club@college.edu',
-    facultyCoordinator: 'Dr. Patel',
-    department: 'Computer Science',
-    website: 'https://techclub.example.edu',
-    description: 'Campus technology and innovation club focused on events and workshops.',
+    clubName: '',
+    email: '',
+    facultyCoordinator: '',
+    department: '',
+    description: '',
   });
 
   const [securitySettings, setSecuritySettings] = useState({
@@ -48,12 +50,119 @@ export default function ClubSettingsPage() {
     confirmPassword: '',
   });
 
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    const clubId = window.localStorage.getItem('clubId');
+    if (!clubId) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/club/settings?clubId=${clubId}`);
+      if (response.ok) {
+        const result = await response.json();
+        setProfileSettings(result.data);
+      } else {
+        toast.error('Failed to load settings');
+      }
+    } catch (error) {
+      console.error('Failed to fetch settings:', error);
+      toast.error('Failed to load settings');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSave = async () => {
+    const clubId = window.localStorage.getItem('clubId');
+    if (!clubId) {
+      toast.error('Club ID not found');
+      return;
+    }
+
     setSaveStatus('saving');
-    setTimeout(() => {
-      setSaveStatus('success');
+
+    try {
+      // Save profile settings
+      if (activeTab === 'profile') {
+        const response = await fetch('/api/club/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clubId,
+            type: 'profile',
+            ...profileSettings,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save profile settings');
+        }
+
+        const result = await response.json();
+        setProfileSettings(result.data);
+        setSaveStatus('success');
+        toast.success('Profile updated successfully');
+      }
+      // Save security settings (password)
+      else if (activeTab === 'security') {
+        if (!securitySettings.currentPassword || !securitySettings.newPassword) {
+          setSaveStatus('error');
+          toast.error('Please fill in all password fields');
+          setTimeout(() => setSaveStatus('idle'), 2500);
+          return;
+        }
+
+        if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+          setSaveStatus('error');
+          toast.error('New passwords do not match');
+          setTimeout(() => setSaveStatus('idle'), 2500);
+          return;
+        }
+
+        if (securitySettings.newPassword.length < 6) {
+          setSaveStatus('error');
+          toast.error('Password must be at least 6 characters');
+          setTimeout(() => setSaveStatus('idle'), 2500);
+          return;
+        }
+
+        const response = await fetch('/api/club/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clubId,
+            type: 'password',
+            currentPassword: securitySettings.currentPassword,
+            newPassword: securitySettings.newPassword,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update password');
+        }
+
+        setSaveStatus('success');
+        toast.success('Password updated successfully');
+        setSecuritySettings({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+      }
+
       setTimeout(() => setSaveStatus('idle'), 2500);
-    }, 800);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSaveStatus('error');
+      toast.error(error instanceof Error ? error.message : 'Failed to save settings');
+      setTimeout(() => setSaveStatus('idle'), 2500);
+    }
   };
 
   const container = {
@@ -76,12 +185,27 @@ export default function ClubSettingsPage() {
     { id: 'security', label: 'Security', icon: Shield },
   ];
 
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA]">
+        <Navbar title="Club Settings" userRole="club" />
+        <Sidebar
+          items={sidebarItems}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+        <div className="md:ml-64 pt-6 flex items-center justify-center h-96">
+          <Loader className="w-8 h-8 text-[#8B1E26] animate-spin" />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
       <Navbar title="Club Settings" userRole="club" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
@@ -210,15 +334,6 @@ export default function ClubSettingsPage() {
                 </motion.div>
 
                 <motion.div variants={item}>
-                  <InputField
-                    label="Club Website"
-                    value={profileSettings.website}
-                    onChange={(e) => setProfileSettings({ ...profileSettings, website: e.target.value })}
-                    placeholder="https://"
-                  />
-                </motion.div>
-
-                <motion.div variants={item}>
                   <TextareaField
                     label="Club Description"
                     value={profileSettings.description}
@@ -268,13 +383,23 @@ export default function ClubSettingsPage() {
 
           <div className="flex justify-end mt-6">
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: saveStatus === 'saving' ? 1 : 1.02 }}
+              whileTap={{ scale: saveStatus === 'saving' ? 1 : 0.98 }}
               onClick={handleSave}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold"
+              disabled={saveStatus === 'saving'}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
             >
-              <Save size={18} />
-              Save Changes
+              {saveStatus === 'saving' ? (
+                <>
+                  <Loader size={18} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  Save Changes
+                </>
+              )}
             </motion.button>
           </div>
         </div>
