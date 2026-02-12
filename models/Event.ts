@@ -10,6 +10,7 @@ export interface IEvent extends Document {
   description: string;
   event_type: EventType;
   poster_url: string;
+  location?: string;
   requested_resource_type: ResourceType;
   allocated_resource_id: mongoose.Types.ObjectId | null;
   date: Date;
@@ -29,6 +30,7 @@ const eventSchema = new Schema<IEvent>(
     description: { type: String, required: true },
     event_type: { type: String, enum: ['INDIVIDUAL', 'TEAM'], required: true },
     poster_url: { type: String, default: '' },
+    location: { type: String, default: '' },
     requested_resource_type: { type: String, enum: ['HALL', 'ROOM', 'LAB'], required: true },
     allocated_resource_id: { type: Schema.Types.ObjectId, ref: 'Resource', default: null },
     date: { type: Date, required: true },

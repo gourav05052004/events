@@ -36,6 +36,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -54,6 +55,59 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setLoginError('');
+
+    if (role === 'club') {
+      try {
+        const response = await fetch('/api/auth/club-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          setLoginError(data?.error || 'Login failed');
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        window.localStorage.setItem('clubId', data.club.id);
+        router.push('/club/dashboard');
+        return;
+      } catch (error) {
+        console.error('Club login failed:', error);
+        setLoginError('Login failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    if (role === 'admin') {
+      try {
+        const response = await fetch('/api/auth/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          setLoginError(data?.error || 'Login failed');
+          setIsLoading(false);
+          return;
+        }
+
+        router.push('/admin/dashboard');
+        return;
+      } catch (error) {
+        console.error('Admin login failed:', error);
+        setLoginError('Login failed. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+    }
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -258,6 +312,9 @@ export default function LoginPage() {
                   'Login'
                 )}
               </motion.button>
+              {loginError && (
+                <p className="text-sm text-[#D32F2F] text-center">{loginError}</p>
+              )}
             </form>
 
             {/* Sign Up Link */}

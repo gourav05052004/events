@@ -27,15 +27,18 @@ export function Navbar({
     student: [
       { label: 'Browse Events', href: '/student/events' },
       { label: 'My Registrations', href: '/student/registrations' },
+      { label: 'Profile', href: '/student/profile' },
     ],
     club: [
       { label: 'My Events', href: '/club/events' },
       { label: 'Create Event', href: '/club/create-event' },
+      { label: 'Profile', href: '/club/settings' },
     ],
     admin: [
       { label: 'Dashboard', href: '/admin/dashboard' },
       { label: 'Events', href: '/admin/events' },
       { label: 'Clubs', href: '/admin/clubs' },
+      { label: 'Profile', href: '/admin/settings' },
     ],
   };
 
@@ -99,14 +102,30 @@ export function Navbar({
                 {item.label}
               </motion.button>
             ))}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/login')}
-              className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520]"
-            >
-              Login
-            </motion.button>
+            {userRole ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  window.localStorage.removeItem('clubId');
+                  document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                  router.push('/login');
+                }}
+                className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520]"
+              >
+                Logout
+              </motion.button>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/login')}
+                className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520]"
+              >
+                Login
+              </motion.button>
+            )}
           </div>
 
           {/* Mobile Menu Button - Only show if onMenuClick is NOT provided */}

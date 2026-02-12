@@ -3,7 +3,7 @@
 import React from "react"
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
@@ -14,7 +14,6 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/club/dashboard' },
   { label: 'My Events', href: '/club/events' },
   { label: 'Create Event', href: '/club/create-event', active: true },
-  { label: 'Venues', href: '/club/venues' },
   { label: 'Team', href: '/club/team' },
   { label: 'Settings', href: '/club/settings' },
 ];
@@ -23,18 +22,24 @@ export default function CreateEventPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({
+    primaryClubId: '',
     title: '',
     description: '',
+    eventType: '',
     date: '',
-    time: '',
+    startTime: '',
+    endTime: '',
+    registrationDeadline: '',
     location: '',
     venueType: '',
-    maxCapacity: '',
+    minParticipants: '',
+    maxParticipants: '',
     collaboratingClubs: '',
   });
   const [posterImage, setPosterImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
@@ -47,17 +52,76 @@ export default function CreateEventPage() {
     }
   };
 
+  useEffect(() => {
+    const storedClubId = window.localStorage.getItem('clubId') || '';
+    if (storedClubId) {
+      setFormData((prev) => ({ ...prev, primaryClubId: storedClubId }));
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (!formData.primaryClubId) {
+      setSubmitError('Missing club ID. Please log in again.');
+      setIsSubmitting(false);
+      return;
+    }
 
-    setShowSuccess(true);
-    setTimeout(() => {
-      router.push('/club/events');
-    }, 2000);
+    if (!posterImage) {
+      setSubmitError('Please upload an event poster.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append('primaryClubId', formData.primaryClubId);
+    payload.append('title', formData.title);
+    payload.append('description', formData.description);
+    payload.append('eventType', formData.eventType);
+    payload.append('date', formData.date);
+    payload.append('startTime', formData.startTime);
+    payload.append('endTime', formData.endTime);
+    payload.append('registrationDeadline', formData.registrationDeadline);
+    payload.append('location', formData.location);
+    payload.append('venueType', formData.venueType);
+    payload.append('minParticipants', formData.minParticipants);
+    payload.append('maxParticipants', formData.maxParticipants);
+    payload.append('collaboratingClubs', formData.collaboratingClubs);
+    payload.append('poster', posterImage);
+
+    console.log('Creating event with clubId:', formData.primaryClubId);
+
+    try {
+      const response = await fetch('/api/club/events', {
+        method: 'POST',
+        body: payload,
+      });
+
+      console.log('Create event response status:', response.status);
+
+      if (!response.ok) {
+        const data = await response.json();
+        console.error('Create event error:', data);
+        setSubmitError(data?.error || 'Failed to create event.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('Event created successfully:', result);
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        router.push('/club/events');
+      }, 2000);
+    } catch (error) {
+      console.error('Create event failed:', error);
+      setSubmitError('Something went wrong. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   const container = {
@@ -160,6 +224,19 @@ export default function CreateEventPage() {
                 />
               </motion.div>
 
+              <motion.div variants={item}>
+                <SelectField
+                  label="Event Type"
+                  value={formData.eventType}
+                  onChange={(e) => handleInputChange('eventType', e.target.value)}
+                  options={[
+                    { value: 'INDIVIDUAL', label: 'Individual' },
+                    { value: 'TEAM', label: 'Team' },
+                  ]}
+                  required
+                />
+              </motion.div>
+
               {/* Date & Time */}
               <motion.div variants={item} className="grid md:grid-cols-2 gap-6">
                 <InputField
@@ -171,9 +248,26 @@ export default function CreateEventPage() {
                 />
                 <InputField
                   type="time"
-                  label="Time"
-                  value={formData.time}
-                  onChange={(e) => handleInputChange('time', e.target.value)}
+                  label="Start Time"
+                  value={formData.startTime}
+                  onChange={(e) => handleInputChange('startTime', e.target.value)}
+                  required
+                />
+              </motion.div>
+
+              <motion.div variants={item} className="grid md:grid-cols-2 gap-6">
+                <InputField
+                  type="time"
+                  label="End Time"
+                  value={formData.endTime}
+                  onChange={(e) => handleInputChange('endTime', e.target.value)}
+                  required
+                />
+                <InputField
+                  type="date"
+                  label="Registration Deadline"
+                  value={formData.registrationDeadline}
+                  onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
                   required
                 />
               </motion.div>
@@ -196,19 +290,29 @@ export default function CreateEventPage() {
                   value={formData.venueType}
                   onChange={(e) => handleInputChange('venueType', e.target.value)}
                   options={[
-                    { value: 'hall', label: 'Hall' },
-                    { value: 'room', label: 'Room' },
-                    { value: 'lab', label: 'Lab' },
-                    { value: 'outdoor', label: 'Outdoor Space' },
+                    { value: 'HALL', label: 'Hall' },
+                    { value: 'ROOM', label: 'Room' },
+                    { value: 'LAB', label: 'Lab' },
                   ]}
                   required
                 />
                 <InputField
                   type="number"
+                  label="Min Participants"
+                  placeholder="Minimum number of participants"
+                  value={formData.minParticipants}
+                  onChange={(e) => handleInputChange('minParticipants', e.target.value)}
+                  required
+                />
+              </motion.div>
+
+              <motion.div variants={item}>
+                <InputField
+                  type="number"
                   label="Max Capacity"
                   placeholder="Maximum number of attendees"
-                  value={formData.maxCapacity}
-                  onChange={(e) => handleInputChange('maxCapacity', e.target.value)}
+                  value={formData.maxParticipants}
+                  onChange={(e) => handleInputChange('maxParticipants', e.target.value)}
                   required
                 />
               </motion.div>
@@ -249,7 +353,11 @@ export default function CreateEventPage() {
               </motion.div>
 
               {/* Submit Button */}
-              <motion.div variants={item} className="flex gap-3 pt-6">
+              <motion.div variants={item} className="flex flex-col gap-4 pt-6">
+                {submitError && (
+                  <p className="text-sm text-[#D32F2F]">{submitError}</p>
+                )}
+                <div className="flex gap-3">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -279,6 +387,7 @@ export default function CreateEventPage() {
                 >
                   Cancel
                 </motion.button>
+                </div>
               </motion.div>
             </form>
           </motion.div>

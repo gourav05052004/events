@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * @returns Decoded token payload or null if invalid
  */
 export function verifyRequestToken(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get('authorization') || undefined;
   const token = extractTokenFromHeader(authHeader);
 
   if (!token) {

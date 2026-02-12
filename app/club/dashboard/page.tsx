@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
@@ -14,7 +14,6 @@ import {
   CheckCircle,
   Plus,
   BarChart3,
-  Building2,
   Eye,
   Edit,
   Trash2,
@@ -24,69 +23,80 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/club/dashboard', active: true },
   { label: 'My Events', href: '/club/events' },
   { label: 'Create Event', href: '/club/create-event' },
-  { label: 'Venues', href: '/club/venues' },
   { label: 'Team', href: '/club/team' },
   { label: 'Settings', href: '/club/settings' },
-];
-
-const clubEvents = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-    attendees: 245,
-    maxAttendees: 500,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    date: 'Mar 5, 2025',
-    time: '9:00 AM',
-    location: 'Conference Hall',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-    status: 'pending' as const,
-    attendees: 89,
-    maxAttendees: 300,
-  },
 ];
 
 interface EventTableRow {
   id: string;
   title: string;
   date: string;
+  time: string;
+  location: string;
+  image: string;
   status: 'pending' | 'approved' | 'cancelled';
-  registrations: number;
-  maxCapacity: number;
+  attendees: number;
+  maxAttendees: number;
+  category: string;
 }
 
-const eventTableData: EventTableRow[] = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    status: 'approved',
-    registrations: 245,
-    maxCapacity: 500,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    date: 'Mar 5, 2025',
-    status: 'pending',
-    registrations: 89,
-    maxCapacity: 300,
-  },
-];
+interface DashboardStats {
+  activeEvents: number;
+  totalRegistrations: number;
+  completedEvents: number;
+  avgAttendance: number;
+}
 
 export default function ClubDashboard() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventTableRow | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [clubName, setClubName] = useState('Tech Club');
+  const [stats, setStats] = useState<DashboardStats>({
+    activeEvents: 0,
+    totalRegistrations: 0,
+    completedEvents: 0,
+    avgAttendance: 0,
+  });
+  const [events, setEvents] = useState<EventTableRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      const clubId = window.localStorage.getItem('clubId');
+      if (!clubId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch dashboard stats
+        const statsResponse = await fetch(`/api/club/dashboard?clubId=${clubId}`);
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setClubName(statsData.clubName || 'Tech Club');
+          setStats(statsData.stats);
+        }
+
+        // Fetch events
+        const eventsResponse = await fetch(`/api/club/events/list?clubId=${clubId}`);
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json();
+          setEvents(eventsData.events || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Get recent events (latest 2)
+  const recentEvents = events.slice(0, 2);
 
   const container = {
     hidden: { opacity: 0 },
@@ -121,8 +131,8 @@ export default function ClubDashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome back, Tech Club!</h1>
-            <p className="text-[#666666]">Manage your events, venues, and team collaborations.</p>
+            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome back, {clubName}!</h1>
+            <p className="text-[#666666]">Manage your events and team collaborations.</p>
           </motion.div>
 
           {/* Stats Cards */}
@@ -135,25 +145,23 @@ export default function ClubDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="Active Events"
-                value="2"
+                value={isLoading ? '-' : String(stats.activeEvents)}
                 icon={<Calendar size={32} />}
                 color="primary"
-                trend={{ value: 1, direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Total Registrations"
-                value="334"
+                value={isLoading ? '-' : String(stats.totalRegistrations)}
                 icon={<Users size={32} />}
                 color="success"
-                trend={{ value: 15, direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Completed Events"
-                value="5"
+                value={isLoading ? '-' : String(stats.completedEvents)}
                 icon={<CheckCircle size={32} />}
                 color="success"
               />
@@ -161,7 +169,7 @@ export default function ClubDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="Avg Attendance"
-                value="87%"
+                value={isLoading ? '-' : `${stats.avgAttendance}%`}
                 icon={<BarChart3 size={32} />}
                 color="primary"
               />
@@ -186,15 +194,6 @@ export default function ClubDashboard() {
                 <Plus size={20} />
                 Create New Event
               </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/club/venues')}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold hover:bg-[#8B1E26]/5 transition-all"
-              >
-                <Building2 size={20} />
-                Request Venue
-              </motion.button>
             </div>
           </motion.div>
 
@@ -206,19 +205,25 @@ export default function ClubDashboard() {
             className="mb-12"
           >
             <h2 className="text-3xl font-bold text-[#2D2D2D] mb-6">Your Recent Events</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {clubEvents.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <EventCard {...event} onClick={() => setSelectedEvent(eventTableData[index])} />
-                </motion.div>
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="text-center py-8 text-[#666666]">Loading events...</div>
+            ) : recentEvents.length === 0 ? (
+              <div className="text-center py-8 text-[#666666]">No events created yet. Create your first event!</div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {recentEvents.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <EventCard {...event} onClick={() => setSelectedEvent(event)} />
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </motion.section>
 
           {/* Events Table */}
@@ -243,60 +248,79 @@ export default function ClubDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {eventTableData.map((event) => (
-                      <motion.tr
-                        key={event.id}
-                        whileHover={{ backgroundColor: '#F8F9FA' }}
-                        className="border-b border-[#E8E8E8]"
-                      >
-                        <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
-                        <td className="px-6 py-4 text-[#666666]">{event.date}</td>
-                        <td className="px-6 py-4">
-                          {event.status === 'approved' && (
-                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                              Approved
-                            </span>
-                          )}
-                          {event.status === 'pending' && (
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
-                              Pending
-                            </span>
-                          )}
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center text-[#666666]">
+                          Loading events...
                         </td>
-                        <td className="px-6 py-4 text-[#2D2D2D]">
-                          {event.registrations}/{event.maxCapacity}
+                      </tr>
+                    ) : events.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-8 text-center text-[#666666]">
+                          No events found. Create your first event!
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-2">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                setSelectedEvent(event);
-                                setShowEventModal(true);
-                              }}
-                              className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                            >
-                              <Eye size={18} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors"
-                            >
-                              <Edit size={18} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                            >
-                              <Trash2 size={18} />
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
+                      </tr>
+                    ) : (
+                      events.map((event) => (
+                        <motion.tr
+                          key={event.id}
+                          whileHover={{ backgroundColor: '#F8F9FA' }}
+                          className="border-b border-[#E8E8E8]"
+                        >
+                          <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
+                          <td className="px-6 py-4 text-[#666666]">{event.date}</td>
+                          <td className="px-6 py-4">
+                            {event.status === 'approved' && (
+                              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                Approved
+                              </span>
+                            )}
+                            {event.status === 'pending' && (
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                                Pending
+                              </span>
+                            )}
+                            {event.status === 'cancelled' && (
+                              <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                                Cancelled
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-[#2D2D2D]">
+                            {event.attendees}/{event.maxAttendees}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  setSelectedEvent(event);
+                                  setShowEventModal(true);
+                                }}
+                                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                              >
+                                <Eye size={18} />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors"
+                              >
+                                <Edit size={18} />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                              >
+                                <Trash2 size={18} />
+                              </motion.button>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -319,15 +343,23 @@ export default function ClubDashboard() {
               <p className="font-bold text-[#2D2D2D]">{selectedEvent.date}</p>
             </div>
             <div>
+              <p className="text-sm text-[#666666]">Time</p>
+              <p className="font-bold text-[#2D2D2D]">{selectedEvent.time}</p>
+            </div>
+            <div>
+              <p className="text-sm text-[#666666]">Location</p>
+              <p className="font-bold text-[#2D2D2D]">{selectedEvent.location}</p>
+            </div>
+            <div>
               <p className="text-sm text-[#666666]">Status</p>
               <p className="font-bold text-[#2D2D2D]">
-                {selectedEvent.status === 'approved' ? '✓ Approved' : '○ Pending'}
+                {selectedEvent.status === 'approved' ? '✓ Approved' : selectedEvent.status === 'pending' ? '○ Pending' : '✕ Cancelled'}
               </p>
             </div>
             <div>
               <p className="text-sm text-[#666666]">Registrations</p>
               <p className="font-bold text-[#2D2D2D]">
-                {selectedEvent.registrations} / {selectedEvent.maxCapacity}
+                {selectedEvent.attendees} / {selectedEvent.maxAttendees}
               </p>
             </div>
           </div>
