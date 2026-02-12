@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { StatusBadge } from '@/components/status-badge';
 import { Modal } from '@/components/modal';
@@ -64,11 +65,26 @@ export default function EventDetailPage() {
   const handleRegister = () => {
     if (registrationStep === 1) {
       setRegistrationStep(2);
+      toast('Please confirm your registration', { icon: 'ℹ️' });
     } else {
       setIsRegistered(true);
       setShowConfirmation(true);
+      toast.success('Registration confirmed! Check your email.');
       setTimeout(() => setShowConfirmation(false), 3000);
       setRegistrationStep(1);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    setIsFavorited(!isFavorited);
+    toast.success(isFavorited ? 'Removed from favorites' : 'Added to favorites');
+  };
+
+  const handleCancelRegistration = () => {
+    if (confirm('Are you sure you want to cancel your registration?')) {
+      setIsRegistered(false);
+      setRegistrationStep(1);
+      toast.success('Registration cancelled');
     }
   };
 
@@ -89,7 +105,7 @@ export default function EventDetailPage() {
           <div className="absolute top-4 right-4 flex gap-2">
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={() => setIsFavorited(!isFavorited)}
+              onClick={handleToggleFavorite}
               className={`p-3 rounded-full backdrop-blur-sm transition-all ${
                 isFavorited
                   ? 'bg-red-500 text-white'
@@ -241,7 +257,7 @@ export default function EventDetailPage() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setIsRegistered(false)}
+                    onClick={handleCancelRegistration}
                     className="w-full px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold hover:bg-[#8B1E26]/5 transition-all"
                   >
                     Cancel Registration

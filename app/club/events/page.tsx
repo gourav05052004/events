@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
@@ -77,12 +78,15 @@ export default function ClubEventsPage() {
           const data = await response.json();
           console.log('Events received:', data.events?.length || 0, data.events);
           setClubEvents(data.events || []);
+          toast.success(`Loaded ${data.events?.length || 0} events`);
         } else {
           const error = await response.json();
           console.error('Failed to fetch events:', error);
+          toast.error('Failed to load events');
         }
       } catch (error) {
         console.error('Failed to fetch events:', error);
+        toast.error('Error loading events');
       } finally {
         setIsLoading(false);
       }
@@ -111,12 +115,31 @@ export default function ClubEventsPage() {
     setShowEventModal(true);
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm('Are you sure you want to delete this event?')) return;
+
+    try {
+      const response = await fetch(`/api/club/events/${eventId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setClubEvents(clubEvents.filter((e) => e.id !== eventId));
+        toast.success('Event deleted successfully');
+      } else {
+        toast.error('Failed to delete event');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Error deleting event');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
       <Navbar title="My Events" userRole="club" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
@@ -376,6 +399,7 @@ export default function ClubEventsPage() {
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
+                              onClick={() => handleDeleteEvent(event.id)}
                               className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                             >
                               <Trash2 size={16} />

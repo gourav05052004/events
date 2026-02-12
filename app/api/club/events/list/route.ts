@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Valid club ID required' }, { status: 400 });
     }
 
+    // First get the club details
+    const Club = require('@/models').Club;
+    const club = await Club.findById(clubId).lean();
+
     const query = { primary_club_id: new mongoose.Types.ObjectId(clubId) };
     console.log('[GET /api/club/events/list] Querying with:', JSON.stringify(query));
 
@@ -39,6 +43,9 @@ export async function GET(request: NextRequest) {
       attendees: 0, // TODO: Count from EventRegistration
       maxAttendees: event.max_participants,
       category: event.event_type,
+      clubLogo: club?.logo || '',
+      clubName: club?.club_name || 'Unknown Club',
+      brandColor: club?.brand_color || '#8B1E26',
     }));
 
     return NextResponse.json({ events: formattedEvents }, { status: 200 });

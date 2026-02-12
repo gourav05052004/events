@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Menu, X, LogOut, User } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 interface NavbarProps {
   title?: string;
@@ -22,6 +22,22 @@ export function Navbar({
 }: NavbarProps) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdown, setProfileDropdown] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setProfileDropdown(false);
+      }
+    };
+
+    if (profileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [profileDropdown]);
 
   const navigationItems = {
     student: [
@@ -32,7 +48,6 @@ export function Navbar({
     club: [
       { label: 'My Events', href: '/club/events' },
       { label: 'Create Event', href: '/club/create-event' },
-      { label: 'Profile', href: '/club/settings' },
     ],
     admin: [
       { label: 'Dashboard', href: '/admin/dashboard' },
@@ -103,19 +118,87 @@ export function Navbar({
               </motion.button>
             ))}
             {userRole ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  window.localStorage.removeItem('clubId');
-                  document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                  document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                  router.push('/login');
-                }}
-                className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520]"
-              >
-                Logout
-              </motion.button>
+              <div className="relative" ref={profileRef}>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setProfileDropdown(!profileDropdown)}
+                  className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520] flex items-center gap-2"
+                >
+                  <User size={18} />
+                  Profile
+                </motion.button>
+                {profileDropdown && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50"
+                  >
+                    {userRole === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            router.push('/admin/settings');
+                            setProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8]"
+                        >
+                          <User size={16} />
+                          Settings
+                        </button>
+                      </>
+                    )}
+                    {userRole === 'club' && (
+                      <>
+                        <button
+                          onClick={() => {
+                            router.push('/club/dashboard');
+                            setProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2"
+                        >
+                          <User size={16} />
+                          Dashboard
+                        </button>
+                        <button
+                          onClick={() => {
+                            router.push('/club/settings');
+                            setProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2"
+                        >
+                          <User size={16} />
+                          Settings
+                        </button>
+                        <button
+                          onClick={() => {
+                            router.push('/club/team');
+                            setProfileDropdown(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8]"
+                        >
+                          <User size={16} />
+                          Team
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => {
+                        window.localStorage.removeItem('clubId');
+                        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                        setProfileDropdown(false);
+                        router.push('/login');
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             ) : (
               <motion.button
                 whileHover={{ scale: 1.05 }}

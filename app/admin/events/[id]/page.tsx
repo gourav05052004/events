@@ -14,8 +14,6 @@ const sidebarItems = [
   { label: 'Events', href: '/admin/events', active: true },
   { label: 'Clubs', href: '/admin/clubs' },
   { label: 'Venues', href: '/admin/venues' },
-  { label: 'Activity Logs', href: '/admin/logs' },
-  { label: 'Settings', href: '/admin/settings' },
 ];
 
 interface Registration {
@@ -242,7 +240,6 @@ export default function EventDetailsPage() {
       <Navbar title="Event Details" userRole="admin" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />

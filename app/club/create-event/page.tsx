@@ -5,6 +5,7 @@ import React from "react"
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { InputField, TextareaField, SelectField } from '@/components/form-field';
@@ -48,6 +49,7 @@ export default function CreateEventPage() {
     const files = e.target.files;
     if (files && files.length > 0) {
       setPosterImage(files[0]);
+      toast.success('Poster uploaded successfully');
     }
   };
 
@@ -64,13 +66,17 @@ export default function CreateEventPage() {
     setSubmitError('');
 
     if (!formData.primaryClubId) {
-      setSubmitError('Missing club ID. Please log in again.');
+      const errorMsg = 'Missing club ID. Please log in again.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
       setIsSubmitting(false);
       return;
     }
 
     if (!posterImage) {
-      setSubmitError('Please upload an event poster.');
+      const errorMsg = 'Please upload an event poster.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
       setIsSubmitting(false);
       return;
     }
@@ -103,7 +109,9 @@ export default function CreateEventPage() {
       if (!response.ok) {
         const data = await response.json();
         console.error('Create event error:', data);
-        setSubmitError(data?.error || 'Failed to create event.');
+        const errorMsg = data?.error || 'Failed to create event.';
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
         setIsSubmitting(false);
         return;
       }
@@ -111,13 +119,16 @@ export default function CreateEventPage() {
       const result = await response.json();
       console.log('Event created successfully:', result);
 
+      toast.success('Event created successfully! Redirecting...');
       setShowSuccess(true);
       setTimeout(() => {
         router.push('/club/events');
       }, 2000);
     } catch (error) {
       console.error('Create event failed:', error);
-      setSubmitError('Something went wrong. Please try again.');
+      const errorMsg = 'Something went wrong. Please try again.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
       setIsSubmitting(false);
     }
   };
@@ -174,7 +185,6 @@ export default function CreateEventPage() {
       <Navbar title="Create Event" userRole="club" showBackButton={true} onBackClick={() => router.back()} />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />

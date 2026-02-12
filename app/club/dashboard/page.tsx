@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { StatsCard } from '@/components/stats-card';
@@ -17,6 +18,8 @@ import {
   Eye,
   Edit,
   Trash2,
+  Upload,
+  Info,
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -49,10 +52,15 @@ interface DashboardStats {
 
 export default function ClubDashboard() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventTableRow | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [clubName, setClubName] = useState('Tech Club');
+  const [clubDescription, setClubDescription] = useState('');
+  const [clubLogo, setClubLogo] = useState('');
+  const [brandColor, setBrandColor] = useState('#8B1E26');
+  const [facultyCoordinator, setFacultyCoordinator] = useState('');
   const [stats, setStats] = useState<DashboardStats>({
     activeEvents: 0,
     totalRegistrations: 0,
@@ -61,6 +69,7 @@ export default function ClubDashboard() {
   });
   const [events, setEvents] = useState<EventTableRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -71,11 +80,19 @@ export default function ClubDashboard() {
       }
 
       try {
+        console.log('[fetchDashboardData] Starting fetch for clubId:', clubId);
+        
         // Fetch dashboard stats
         const statsResponse = await fetch(`/api/club/dashboard?clubId=${clubId}`);
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
+          console.log('[fetchDashboardData] 📥 Dashboard data - Logo:', statsData.clubLogo || '❌ NO LOGO IN DATABASE');
+          
           setClubName(statsData.clubName || 'Tech Club');
+          setClubDescription(statsData.clubDescription || '');
+          setClubLogo(statsData.clubLogo || '');
+          setBrandColor(statsData.brandColor || '#8B1E26');
+          setFacultyCoordinator(statsData.facultyCoordinator || '');
           setStats(statsData.stats);
         }
 
@@ -94,6 +111,62 @@ export default function ClubDashboard() {
 
     fetchDashboardData();
   }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const clubId = window.localStorage.getItem('clubId');
+    if (!clubId) {
+      toast.error('Club ID not found');
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+      console.log('[handleLogoUpload] Starting upload:', { clubId, fileName: file.name, fileSize: file.size });
+      
+      const formData = new FormData();
+      formData.append('logo', file);
+      formData.append('clubId', clubId);
+
+      console.log('[handleLogoUpload] Sending request to /api/admin/clubs');
+      
+      const response = await fetch('/api/admin/clubs', {
+        method: 'PUT',
+        body: formData,
+      });
+
+      console.log('[handleLogoUpload] Response received:', { status: response.status, ok: response.ok });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('[handleLogoUpload] Error response:', error);
+        throw new Error(error.error || error.details || 'Failed to upload logo');
+      }
+
+      const data = await response.json();
+      console.log('[handleLogoUpload] ✅ Upload successful - Logo URL:', data.club.logo);
+
+      // Update state with the newly uploaded logo
+      setClubLogo(data.club.logo);
+      toast.success('Club logo updated successfully');
+
+      // Refresh dashboard data to ensure logo persists
+      console.log('[handleLogoUpload] 🔄 Refreshing dashboard data...');
+      const dashboardResponse = await fetch(`/api/club/dashboard?clubId=${clubId}`);
+      if (dashboardResponse.ok) {
+        const dashboardData = await dashboardResponse.json();
+        console.log('[handleLogoUpload] ✅ Dashboard refreshed - Logo URL:', dashboardData.clubLogo || '❌ NO LOGO IN RESPONSE');
+        setClubLogo(dashboardData.clubLogo || '');
+      }
+    } catch (error) {
+      console.error('[handleLogoUpload] Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   // Get recent events (latest 2)
   const recentEvents = events.slice(0, 2);
@@ -118,21 +191,121 @@ export default function ClubDashboard() {
       <Navbar title="Club Dashboard" userRole="club" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
       <div className="md:ml-64 pt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          {/* Welcome Section */}
+          {/* Club Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
+            className="mb-12 rounded-2xl overflow-hidden border border-[#E8E8E8]"
+            style={{
+              background: `linear-gradient(135deg, ${brandColor}15, ${brandColor}05)`,
+              borderColor: `${brandColor}30`,
+            }}
           >
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome back, {clubName}!</h1>
-            <p className="text-[#666666]">Manage your events and team collaborations.</p>
+            <div className="p-8 md:p-12">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Logo Section */}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  className="flex-shrink-0"
+                >
+                  <div className="relative group">
+                    <div
+                      className="w-40 h-40 rounded-2xl flex items-center justify-center border-4 shadow-lg"
+                      style={{
+                        borderColor: brandColor,
+                        backgroundColor: '#FFFFFF',
+                      }}
+                    >
+                      {clubLogo ? (
+                        <img
+                          src={clubLogo}
+                          alt={clubName}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <div
+                            className="text-5xl font-bold"
+                            style={{ color: brandColor }}
+                          >
+                            {clubName.charAt(0).toUpperCase()}
+                          </div>
+                          <p className="text-xs text-[#666666] mt-2">No logo</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Logo Upload Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      className="absolute bottom-0 right-0 p-3 rounded-full shadow-lg transition-all bg-white border-2 hover:shadow-xl"
+                      style={{
+                        borderColor: brandColor,
+                      }}
+                    >
+                      <Upload
+                        size={20}
+                        style={{ color: brandColor }}
+                      />
+                    </motion.button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      disabled={isUploadingLogo}
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Club Info Section */}
+                <div className="flex-1">
+                  <h1
+                    className="text-5xl font-bold mb-2"
+                    style={{ color: brandColor }}
+                  >
+                    {clubName}
+                  </h1>
+
+                  {clubDescription && (
+                    <p className="text-lg text-[#555555] mb-6 leading-relaxed">
+                      {clubDescription}
+                    </p>
+                  )}
+
+                  {facultyCoordinator && (
+                    <div className="flex items-center gap-2 text-[#666666]">
+                      <Info size={18} style={{ color: brandColor }} />
+                      <span className="font-medium">
+                        Faculty Coordinator: <span className="font-bold text-[#2D2D2D]">{facultyCoordinator}</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Welcome Message */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <p className="text-[#666666] text-lg">
+              Welcome back! Manage your club events and collaborations below.
+            </p>
           </motion.div>
 
           {/* Stats Cards */}
@@ -148,6 +321,7 @@ export default function ClubDashboard() {
                 value={isLoading ? '-' : String(stats.activeEvents)}
                 icon={<Calendar size={32} />}
                 color="primary"
+                customColor={brandColor}
               />
             </motion.div>
             <motion.div variants={item}>
@@ -172,6 +346,7 @@ export default function ClubDashboard() {
                 value={isLoading ? '-' : `${stats.avgAttendance}%`}
                 icon={<BarChart3 size={32} />}
                 color="primary"
+                customColor={brandColor}
               />
             </motion.div>
           </motion.div>
@@ -189,7 +364,10 @@ export default function ClubDashboard() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/club/create-event')}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all"
+                className="flex items-center gap-2 px-6 py-3 text-white rounded-lg font-bold hover:shadow-lg transition-all"
+                style={{
+                  background: `linear-gradient(135deg, ${brandColor}, ${brandColor}dd)`,
+                }}
               >
                 <Plus size={20} />
                 Create New Event

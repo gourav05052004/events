@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const events = await Event.find()
-      .populate('primary_club_id', 'club_name email')
+      .populate('primary_club_id', 'club_name email logo brand_color')
       .populate('allocated_resource_id', 'name resource_type')
       .sort({ date: -1 })
       .lean();
@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
           title: event.title,
           club_name: event.primary_club_id?.club_name || 'Unknown Club',
           club_email: event.primary_club_id?.email || '',
+          club_logo: event.primary_club_id?.logo || '',
+          club_brand_color: event.primary_club_id?.brand_color || '#8B1E26',
           date: event.date,
           start_time: event.start_time,
           end_time: event.end_time,

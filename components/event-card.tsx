@@ -14,6 +14,9 @@ interface EventCardProps {
   status: 'pending' | 'approved' | 'cancelled';
   attendees?: number;
   maxAttendees?: number;
+  clubLogo?: string;
+  clubName?: string;
+  brandColor?: string;
   onClick?: () => void;
   className?: string;
 }
@@ -28,6 +31,9 @@ export function EventCard({
   status,
   attendees,
   maxAttendees,
+  clubLogo,
+  clubName,
+  brandColor = '#8B1E26',
   onClick,
   className = '',
 }: EventCardProps) {
@@ -47,27 +53,45 @@ export function EventCard({
         <div className="absolute top-3 right-3">
           <StatusBadge status={status} size="sm" />
         </div>
+
+        {/* Club Logo Badge */}
+        {clubLogo && (
+          <div className="absolute bottom-3 left-3 bg-white rounded-lg p-2 shadow-lg">
+            <img
+              src={clubLogo}
+              alt={clubName}
+              className="w-10 h-10 object-cover rounded"
+            />
+          </div>
+        )}
       </div>
 
       <div className="p-4">
+        {/* Club Name */}
+        {clubName && (
+          <p className="text-xs font-semibold mb-2" style={{ color: brandColor }}>
+            {clubName}
+          </p>
+        )}
+        
         <h3 className="text-lg font-bold text-[#2D2D2D] mb-3 line-clamp-2">{title}</h3>
 
         <div className="space-y-2 text-sm text-[#666666]">
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-[#8B1E26]" />
+            <Calendar size={16} style={{ color: brandColor }} />
             <span>{date}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar size={16} className="text-[#8B1E26]" />
+            <Calendar size={16} style={{ color: brandColor }} />
             <span>{time}</span>
           </div>
           <div className="flex items-center gap-2">
-            <MapPin size={16} className="text-[#8B1E26]" />
+            <MapPin size={16} style={{ color: brandColor }} />
             <span className="truncate">{location}</span>
           </div>
           {attendees !== undefined && maxAttendees !== undefined && (
             <div className="flex items-center gap-2">
-              <Users size={16} className="text-[#8B1E26]" />
+              <Users size={16} style={{ color: brandColor }} />
               <span>
                 {attendees}/{maxAttendees} attendees
               </span>

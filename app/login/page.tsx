@@ -4,6 +4,7 @@ import React from "react"
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { InputField } from '@/components/form-field';
 
@@ -67,17 +68,21 @@ export default function LoginPage() {
 
         if (!response.ok) {
           const data = await response.json();
-          setLoginError(data?.error || 'Login failed');
+          const errorMsg = data?.error || 'Login failed';
+          toast.error(errorMsg);
+          setLoginError(errorMsg);
           setIsLoading(false);
           return;
         }
 
         const data = await response.json();
         window.localStorage.setItem('clubId', data.club.id);
+        toast.success('Login successful! Redirecting...');
         router.push('/club/dashboard');
         return;
       } catch (error) {
         console.error('Club login failed:', error);
+        toast.error('Login failed. Please try again.');
         setLoginError('Login failed. Please try again.');
         setIsLoading(false);
         return;
@@ -94,15 +99,21 @@ export default function LoginPage() {
 
         if (!response.ok) {
           const data = await response.json();
-          setLoginError(data?.error || 'Login failed');
+          const errorMsg = data?.error || 'Login failed';
+          toast.error(errorMsg);
+          setLoginError(errorMsg);
           setIsLoading(false);
           return;
         }
 
+        const data = await response.json();
+        window.localStorage.setItem('adminId', data.admin.id);
+        toast.success('Login successful! Redirecting...');
         router.push('/admin/dashboard');
         return;
       } catch (error) {
         console.error('Admin login failed:', error);
+        toast.error('Login failed. Please try again.');
         setLoginError('Login failed. Please try again.');
         setIsLoading(false);
         return;
@@ -114,6 +125,7 @@ export default function LoginPage() {
 
     // Navigate based on role
     if (role === 'student') {
+      toast.success('Login successful! Redirecting...');
       router.push('/student/dashboard');
     } else if (role === 'club') {
       router.push('/club/dashboard');

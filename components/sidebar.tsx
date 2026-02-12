@@ -4,8 +4,6 @@ import React from "react"
 
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, X } from 'lucide-react';
-import { useState } from 'react';
 
 interface NavItem {
   label: string;
@@ -16,12 +14,11 @@ interface NavItem {
 
 interface SidebarProps {
   items: NavItem[];
-  onLogout?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
 }
 
-export function Sidebar({ items, onLogout, mobileOpen = false, onMobileClose }: SidebarProps) {
+export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarProps) {
   const router = useRouter();
 
   const handleNavigate = (href: string) => {
@@ -59,19 +56,6 @@ export function Sidebar({ items, onLogout, mobileOpen = false, onMobileClose }: 
           ))}
         </AnimatePresence>
       </nav>
-
-      {/* Logout Button */}
-      <motion.div className="p-4 border-t border-[#E8E8E8]">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors"
-        >
-          <LogOut size={18} />
-          <span>Logout</span>
-        </motion.button>
-      </motion.div>
     </div>
   );
 

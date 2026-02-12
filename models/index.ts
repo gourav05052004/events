@@ -9,3 +9,4 @@ export { default as Team, type ITeam } from './Team';
 export { default as TeamMember, type ITeamMember } from './TeamMember';
 export { default as EventSlot, type IEventSlot } from './EventSlot';
 export { default as ActivityLog, type IActivityLog, type ActorType } from './ActivityLog';
+export { default as Settings, type ISettings } from './Settings';

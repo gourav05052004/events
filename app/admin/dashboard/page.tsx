@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { StatsCard } from '@/components/stats-card';
@@ -12,9 +13,6 @@ import {
   Users,
   Building2,
   CheckCircle,
-  Eye,
-  Check,
-  X,
   AlertCircle,
 } from 'lucide-react';
 
@@ -23,8 +21,6 @@ const sidebarItems = [
   { label: 'Events', href: '/admin/events' },
   { label: 'Clubs', href: '/admin/clubs' },
   { label: 'Venues', href: '/admin/venues' },
-  { label: 'Activity Logs', href: '/admin/logs' },
-  { label: 'Settings', href: '/admin/settings' },
 ];
 
 interface PendingEvent {
@@ -87,6 +83,12 @@ export default function AdminDashboard() {
         const venuesData = venuesRes.ok ? await venuesRes.json() : { data: [] };
         const allVenues = venuesData.data || [];
 
+        if (!eventsRes.ok || !clubsRes.ok || !venuesRes.ok) {
+          toast.error('Failed to load some dashboard data');
+        } else {
+          toast.success('Dashboard loaded successfully');
+        }
+
         // Count events by status
         const eventsByStatus = {
           approved: allEvents.filter((e: any) => e.status === 'APPROVED').length,
@@ -117,6 +119,7 @@ export default function AdminDashboard() {
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        toast.error('Error loading dashboard data');
         // Set default values on error
         setPendingApprovals([]);
       } finally {
@@ -153,7 +156,6 @@ export default function AdminDashboard() {
       <Navbar title="Admin Dashboard" userRole="admin" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
@@ -242,7 +244,6 @@ export default function AdminDashboard() {
                         <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Date</th>
                         <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Venue</th>
                         <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Capacity</th>
-                        <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -261,38 +262,6 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-[#2D2D2D]">{event.requestedCapacity}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-2">
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleEventAction(event, 'approve')}
-                                className="p-2 hover:bg-green-50 text-green-600 rounded-lg transition-colors"
-                              >
-                                <Check size={18} />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => handleEventAction(event, 'reject')}
-                                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                              >
-                                <X size={18} />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => {
-                                  setSelectedEvent(event);
-                                  setEventAction(null);
-                                  setShowEventModal(true);
-                                }}
-                                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                              >
-                                <Eye size={18} />
-                              </motion.button>
-                            </div>
-                          </td>
                         </motion.tr>
                       ))}
                     </tbody>

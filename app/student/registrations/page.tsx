@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
@@ -92,6 +93,7 @@ export default function StudentRegistrationsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [registrations, setRegistrations] = useState(registeredEvents);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,6 +105,27 @@ export default function StudentRegistrationsPage() {
         return 'bg-red-100 text-red-700';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const handleCancelRegistration = async (registrationId: string) => {
+    if (!confirm('Are you sure you want to cancel this registration?')) return;
+
+    try {
+      // Call API to cancel registration
+      const response = await fetch(`/api/student/registrations/${registrationId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setRegistrations(registrations.filter((r) => r.id !== registrationId));
+        toast.success('Registration cancelled successfully');
+      } else {
+        toast.error('Failed to cancel registration');
+      }
+    } catch (error) {
+      console.error('Cancel error:', error);
+      toast.error('Error cancelling registration');
     }
   };
 
@@ -166,7 +189,7 @@ export default function StudentRegistrationsPage() {
               animate={{ opacity: 1 }}
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {registeredEvents.map((event, index) => (
+              {registrations.map((event, index) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -229,6 +252,7 @@ export default function StudentRegistrationsPage() {
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
+                            onClick={() => handleCancelRegistration(reg.id)}
                             className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                           >
                             <Trash2 size={18} />
@@ -243,7 +267,7 @@ export default function StudentRegistrationsPage() {
           )}
 
           {/* No Registrations Message */}
-          {registeredEvents.length === 0 && (
+          {registrations.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

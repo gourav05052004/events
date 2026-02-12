@@ -21,6 +21,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Club not found' }, { status: 404 });
     }
 
+    console.log('[GET /api/club/dashboard] Club data retrieved:', {
+      _id: club._id,
+      club_name: club.club_name,
+      logo: club.logo || 'NO LOGO IN DATABASE',
+      hasLogoField: 'logo' in club,
+      brand_color: club.brand_color || 'DEFAULT',
+    });
+
     // Fetch all events for this club
     const allEvents = await Event.find({ 
       primary_club_id: new mongoose.Types.ObjectId(clubId) 
@@ -51,6 +59,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       clubName: club.club_name,
+      clubDescription: club.description,
+      clubLogo: club.logo,
+      brandColor: club.brand_color || '#8B1E26',
+      facultyCoordinator: club.faculty_coordinator_name,
       stats: {
         activeEvents,
         totalRegistrations,

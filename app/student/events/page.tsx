@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Loader } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
@@ -16,88 +17,78 @@ const sidebarItems = [
   { label: 'My Profile', href: '/student/profile' },
 ];
 
-const allEvents = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM - 5:00 PM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 245,
-    maxAttendees: 500,
-  },
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    date: 'Feb 20, 2025',
-    time: '2:00 PM - 6:00 PM',
-    location: 'Lab 101',
-    image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 120,
-    maxAttendees: 200,
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    date: 'Feb 25, 2025',
-    time: '8:00 AM - 3:00 PM',
-    location: 'Sports Ground',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 600,
-    maxAttendees: 800,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    date: 'Mar 5, 2025',
-    time: '9:00 AM - 4:00 PM',
-    location: 'Conference Hall',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-    status: 'pending' as const,
-    attendees: 89,
-    maxAttendees: 300,
-  },
-  {
-    id: '5',
-    title: 'Photography Workshop',
-    date: 'Mar 10, 2025',
-    time: '3:00 PM - 5:00 PM',
-    location: 'Art Studio',
-    image: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 45,
-    maxAttendees: 100,
-  },
-  {
-    id: '6',
-    title: 'Music Festival',
-    date: 'Mar 15, 2025',
-    time: '6:00 PM - 10:00 PM',
-    location: 'Open Ground',
-    image: 'https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 800,
-    maxAttendees: 1000,
-  },
-];
+interface EventData {
+  _id: string;
+  title: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  status: string;
+  event_type: string;
+  club_name: string;
+  club_logo?: string;
+  club_brand_color?: string;
+  registrations: number;
+  max_participants: number;
+}
 
 export default function EventsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = ['all', 'technical', 'sports', 'cultural', 'entrepreneurship'];
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/admin/events');
+        if (response.ok) {
+          const data = await response.json();
+          // Format events to match EventCard props
+          const formattedEvents = data.data.map((event: EventData) => ({
+            id: event._id,
+            title: event.title,
+            date: new Date(event.date).toLocaleDateString('en-GB', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            }),
+            time: `${event.start_time} - ${event.end_time}`,
+            location: event.location || 'TBD',
+            image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
+            status: event.status.toLowerCase() as 'pending' | 'approved' | 'cancelled',
+            attendees: event.registrations || 0,
+            maxAttendees: event.max_participants,
+            clubName: event.club_name,
+            clubLogo: event.club_logo,
+            brandColor: event.club_brand_color || '#8B1E26',
+            category: event.event_type,
+          }));
+          setAllEvents(formattedEvents);
+        }
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+        toast.error('Failed to load events');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const filteredEvents = allEvents.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       event.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+    return matchesSearch && matchesCategory;
   });
 
   const container = {
@@ -177,31 +168,42 @@ export default function EventsPage() {
             </div>
           </motion.div>
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader className="w-8 h-8 text-[#8B1E26] animate-spin" />
+            </div>
+          )}
+
           {/* Results Count */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-[#666666] mb-6"
-          >
-            Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
-          </motion.p>
+          {!isLoading && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-[#666666] mb-6"
+            >
+              Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
+            </motion.p>
+          )}
 
           {/* Events Grid */}
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            {filteredEvents.map((event) => (
-              <motion.div key={event.id} variants={item}>
-                <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
-              </motion.div>
-            ))}
-          </motion.div>
+          {!isLoading && (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredEvents.map((event) => (
+                <motion.div key={event.id} variants={item}>
+                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
 
-          {filteredEvents.length === 0 && (
+          {!isLoading && filteredEvents.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

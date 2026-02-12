@@ -13,8 +13,6 @@ const sidebarItems = [
   { label: 'Events', href: '/admin/events' },
   { label: 'Clubs', href: '/admin/clubs', active: true },
   { label: 'Venues', href: '/admin/venues' },
-  { label: 'Activity Logs', href: '/admin/logs' },
-  { label: 'Settings', href: '/admin/settings' },
 ];
 
 interface Club {
@@ -102,7 +100,6 @@ export default function AdminClubsPage() {
       <Navbar title="Clubs Management" userRole="admin" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
