@@ -47,16 +47,19 @@ export async function POST(request: Request) {
     const description = String(formData.get('description') || '').trim();
     const eventType = String(formData.get('eventType') || '').trim();
     const date = String(formData.get('date') || '').trim();
+    const endDate = String(formData.get('endDate') || '').trim();
     const startTime = String(formData.get('startTime') || '').trim();
     const endTime = String(formData.get('endTime') || '').trim();
     const registrationDeadline = String(formData.get('registrationDeadline') || '').trim();
     const venueType = String(formData.get('venueType') || '').trim();
-    const minParticipants = Number(formData.get('minParticipants') || 0);
+    const minParticipants = Number(formData.get('minParticipants') || 1);
     const maxParticipants = Number(formData.get('maxParticipants') || 0);
+    const minTeamMembers = Number(formData.get('minTeamMembers') || 0);
+    const maxTeamMembers = Number(formData.get('maxTeamMembers') || 0);
 
     console.log('[POST /api/club/events] Creating event for clubId:', primaryClubId);
 
-    if (!primaryClubId || !title || !description || !eventType || !date || !startTime || !endTime) {
+    if (!primaryClubId || !title || !description || !eventType || !date || !endDate || !startTime || !endTime) {
       console.error('[POST /api/club/events] Missing required fields');
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -69,6 +72,13 @@ export async function POST(request: Request) {
     if (!registrationDeadline || !venueType || !minParticipants || !maxParticipants) {
       console.error('[POST /api/club/events] Missing additional fields');
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (eventType.toUpperCase() === 'TEAM') {
+      if (!minTeamMembers || !maxTeamMembers) {
+        console.error('[POST /api/club/events] Missing team size limits');
+        return Response.json({ error: 'Missing team size limits' }, { status: 400 });
+      }
     }
 
     if (!poster) {
@@ -96,10 +106,13 @@ export async function POST(request: Request) {
       requested_resource_type: resourceType,
       allocated_resource_id: null,
       date: new Date(date),
+      end_date: new Date(endDate),
       start_time: startTime,
       end_time: endTime,
       min_participants: minParticipants,
       max_participants: maxParticipants,
+      min_team_members: eventType.toUpperCase() === 'TEAM' ? minTeamMembers : undefined,
+      max_team_members: eventType.toUpperCase() === 'TEAM' ? maxTeamMembers : undefined,
       registration_deadline: new Date(registrationDeadline),
       status: 'PENDING' as const,
     };

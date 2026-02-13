@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Event } from '@/models';
+import { formatDateRange } from '@/lib/utils';
 import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
@@ -31,11 +32,9 @@ export async function GET(request: NextRequest) {
     const formattedEvents = events.map((event: any) => ({
       id: event._id.toString(),
       title: event.title,
-      date: new Date(event.date).toLocaleDateString('en-GB', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      }),
+      date: formatDateRange(event.date, event.end_date, 'en-GB'),
+      startDate: event.date,
+      endDate: event.end_date,
       time: event.start_time,
       location: event.location || 'TBD',
       image: event.poster_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',

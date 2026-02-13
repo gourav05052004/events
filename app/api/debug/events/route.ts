@@ -20,6 +20,7 @@ export async function GET() {
         console.log('  title:', event.title);
         console.log('  status:', event.status);
         console.log('  date:', event.date);
+        console.log('  end_date:', event.end_date);
       });
     }
 
@@ -32,6 +33,7 @@ export async function GET() {
         event_type: event.event_type,
         status: event.status,
         date: event.date,
+        end_date: event.end_date,
         created_at: event.created_at,
       })),
     });

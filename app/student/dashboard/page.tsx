@@ -7,6 +7,7 @@ import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { StatsCard } from '@/components/stats-card';
 import { EventCard } from '@/components/event-card';
+import { formatDateRange } from '@/lib/utils';
 import { Calendar, BookOpen, Trophy, Bell } from 'lucide-react';
 
 const sidebarItems = [
@@ -20,6 +21,7 @@ interface EventData {
   id: string;
   title: string;
   date: string;
+  end_date?: string;
   time: string;
   location: string;
   image: string;
@@ -95,13 +97,8 @@ export default function StudentDashboard() {
     fetchDashboardData();
   }, [router]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+  const formatDate = (startDate: string, endDate?: string) => {
+    return formatDateRange(startDate, endDate, 'en-US');
   };
 
   const container = {
@@ -256,7 +253,7 @@ export default function StudentDashboard() {
                   >
                     <EventCard 
                       {...event} 
-                      date={formatDate(event.date)}
+                      date={formatDate(event.date, event.end_date)}
                       onClick={() => router.push(`/event/${event.id}`)} 
                     />
                   </motion.div>
@@ -298,7 +295,7 @@ export default function StudentDashboard() {
                   >
                     <EventCard 
                       {...event} 
-                      date={formatDate(event.date)}
+                      date={formatDate(event.date, event.end_date)}
                       onClick={() => router.push(`/event/${event.id}`)} 
                     />
                   </motion.div>

@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
+import { formatDateRange } from '@/lib/utils';
 import { Search, Filter, Loader } from 'lucide-react';
 
 const sidebarItems = [
@@ -20,6 +21,7 @@ interface EventData {
   _id: string;
   title: string;
   date: string;
+  end_date?: string;
   start_time: string;
   end_time: string;
   location: string;
@@ -54,11 +56,7 @@ export default function EventsPage() {
           const formattedEvents = data.data.map((event: EventData) => ({
             id: event._id,
             title: event.title,
-            date: new Date(event.date).toLocaleDateString('en-GB', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            }),
+            date: formatDateRange(event.date, event.end_date, 'en-GB'),
             time: `${event.start_time} - ${event.end_time}`,
             location: event.location || 'TBD',
             image: event.poster_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',

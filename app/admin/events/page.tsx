@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
+import { formatDateRange } from '@/lib/utils';
 import { Search, Filter, Download } from 'lucide-react';
 
 const sidebarItems = [
@@ -21,6 +22,7 @@ interface AdminEvent {
   title: string;
   club_name: string;
   date: string;
+  end_date?: string;
   status: 'PENDING' | 'APPROVED' | 'RESCHEDULED' | 'CANCELLED';
   registrations: number;
   max_participants: number;
@@ -215,7 +217,7 @@ export default function AdminEventsPage() {
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
                         <td className="px-6 py-4 text-[#666666]">{event.club_name}</td>
                         <td className="px-6 py-4 text-[#666666]">
-                          {new Date(event.date).toLocaleDateString('en-GB')}
+                          {formatDateRange(event.date, event.end_date, 'en-GB')}
                         </td>
                         <td className="px-6 py-4">
                           <span

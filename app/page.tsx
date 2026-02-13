@@ -5,12 +5,14 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { EventCarousel } from '@/components/event-carousel';
+import { formatDateRange } from '@/lib/utils';
 import { ArrowRight, Calendar, Users, Trophy } from 'lucide-react';
 
 interface UpcomingEvent {
   id: string;
   title: string;
   date: string;
+  end_date?: string;
   time: string;
   location: string;
   image: string;
@@ -55,11 +57,7 @@ export default function Home() {
           // Format the events data
           const formattedEvents = data.events.map((event: any) => ({
             ...event,
-            date: new Date(event.date).toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric' 
-            }),
+            date: formatDateRange(event.date, event.end_date, 'en-US'),
           }));
           setUpcomingEvents(formattedEvents);
         }
@@ -176,73 +174,84 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 sm:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-4xl font-bold text-center text-[#2D2D2D] mb-4"
-          >
-            Why Choose V-Sphere?
-          </motion.h2>
-          <p className="text-center text-[#666666] mb-12 max-w-2xl mx-auto">
-            Everything you need to organize and participate in campus events.
-          </p>
-
-          <motion.div
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-3 gap-8"
-          >
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={index}
-                  variants={item}
-                  className="bg-white p-8 rounded-xl border-2 border-[#E8E8E8] hover:border-[#8B1E26] transition-all duration-300"
-                >
-                  <motion.div
-                    whileHover={{ rotate: 360 }}
-                    transition={{ duration: 0.6 }}
-                    className="w-16 h-16 bg-[#8B1E26] text-white rounded-lg flex items-center justify-center mb-4"
-                  >
-                    <Icon size={32} />
-                  </motion.div>
-                  <h3 className="text-xl font-bold text-[#2D2D2D] mb-3">{feature.title}</h3>
-                  <p className="text-[#666666]">{feature.description}</p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
+      {/* Upcoming Events Section */}
+      <section className="py-16 sm:py-24 bg-[#FFF7F7]">
+        {loading ? (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto mb-4"></div>
+            <p className="text-[#666666]">Loading upcoming events...</p>
+          </div>
+        ) : upcomingEvents.length > 0 ? (
+          <EventCarousel
+            title="Upcoming Events"
+            events={upcomingEvents}
+            onEventClick={(eventId) => router.push(`/event/${eventId}`)}
+            fullBleed={true}
+          />
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-12">
+            <Calendar className="mx-auto mb-4 text-[#8B1E26]" size={48} />
+            <h3 className="text-xl font-bold text-[#2D2D2D] mb-2">No Upcoming Events</h3>
+            <p className="text-[#666666]">Check back later for new events!</p>
+          </div>
+        )}
       </section>
 
-      {/* Events Carousel Section */}
+      {/* Features Section */}
       <section className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto mb-4"></div>
-              <p className="text-[#666666]">Loading upcoming events...</p>
-            </div>
-          ) : upcomingEvents.length > 0 ? (
-            <EventCarousel
-              title="Upcoming Events"
-              events={upcomingEvents}
-              onEventClick={(eventId) => router.push(`/event/${eventId}`)}
-            />
-          ) : (
-            <div className="text-center py-12">
-              <Calendar className="mx-auto mb-4 text-[#8B1E26]" size={48} />
-              <h3 className="text-xl font-bold text-[#2D2D2D] mb-2">No Upcoming Events</h3>
-              <p className="text-[#666666]">Check back later for new events!</p>
-            </div>
-          )}
+          <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 items-start">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <p className="text-sm uppercase tracking-[0.2em] text-[#8B1E26] font-semibold mb-3">Why V-Sphere</p>
+              <h2
+                className="text-4xl font-bold text-[#2D2D2D] mb-4"
+                style={{ fontFamily: '"Playfair Display", serif' }}
+              >
+                Built to run campus life smoothly.
+              </h2>
+              <p className="text-[#666666] text-lg mb-8">
+                A focused system for clubs, students, and admins with fast approvals, clean
+                scheduling, and transparent attendance tracking.
+              </p>
+              <div className="flex items-center gap-4 text-sm text-[#666666]">
+                <span className="flex items-center gap-2">
+                  <Calendar size={18} className="text-[#8B1E26]" /> Smart scheduling
+                </span>
+                <span className="flex items-center gap-2">
+                  <Users size={18} className="text-[#8B1E26]" /> Better participation
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={container}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              className="grid sm:grid-cols-2 gap-6"
+            >
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                  <motion.div
+                    key={index}
+                    variants={item}
+                    className="bg-[#F8F9FA] p-6 rounded-xl border border-[#E8E8E8] hover:border-[#8B1E26] transition-all duration-300"
+                  >
+                    <div className="w-12 h-12 bg-[#8B1E26] text-white rounded-lg flex items-center justify-center mb-4">
+                      <Icon size={24} />
+                    </div>
+                    <h3 className="text-lg font-bold text-[#2D2D2D] mb-2">{feature.title}</h3>
+                    <p className="text-[#666666] text-sm">{feature.description}</p>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </div>
         </div>
       </section>
 

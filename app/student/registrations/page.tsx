@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
+import { formatDateRange } from '@/lib/utils';
 import { Calendar, Trash2, Loader } from 'lucide-react';
 
 const sidebarItems = [
@@ -20,6 +21,7 @@ interface EventData {
   _id: string;
   title: string;
   date: string;
+  end_date?: string;
   start_time: string;
   end_time: string;
   location: string;
@@ -92,11 +94,7 @@ export default function StudentRegistrationsPage() {
           const event = reg.event;
           if (!event) return null;
 
-          const eventDate = new Date(event.date).toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          });
+          const eventDate = formatDateRange(event.date, event.end_date, 'en-GB');
 
           const registeredDate = new Date(reg.registered_at).toLocaleDateString('en-GB', {
             year: 'numeric',

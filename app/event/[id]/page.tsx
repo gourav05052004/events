@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { StatusBadge } from '@/components/status-badge';
 import { Modal } from '@/components/modal';
+import { formatDateRange } from '@/lib/utils';
 import { Calendar, MapPin, Users, Share2, CheckCircle, Loader, AlertCircle, X, Plus } from 'lucide-react';
 
 interface EventDetail {
@@ -14,6 +15,7 @@ interface EventDetail {
   title: string;
   description: string;
   date: string;
+  end_date?: string;
   start_time: string;
   end_time: string;
   location: string;
@@ -21,6 +23,8 @@ interface EventDetail {
   club_name: string;
   registrations: number;
   max_participants: number;
+  min_team_members?: number | null;
+  max_team_members?: number | null;
   event_type: string;
   poster_url?: string;
 }
@@ -344,11 +348,7 @@ export default function EventDetailPage() {
   }
 
   const registrationPercentage = Math.round((event.registrations / event.max_participants) * 100);
-  const eventDate = new Date(event.date).toLocaleDateString('en-GB', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const eventDate = formatDateRange(event.date, event.end_date, 'en-GB');
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
@@ -433,6 +433,17 @@ export default function EventDetailPage() {
                     </p>
                   </div>
                 </div>
+                {event.event_type === 'TEAM' && event.min_team_members && event.max_team_members ? (
+                  <div className="flex items-center gap-3">
+                    <Users className="text-[#8B1E26]" size={24} />
+                    <div>
+                      <p className="text-sm text-[#666666]">Team Size</p>
+                      <p className="font-bold text-[#2D2D2D]">
+                        {event.min_team_members} - {event.max_team_members} members
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Capacity Bar */}

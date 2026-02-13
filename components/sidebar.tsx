@@ -36,7 +36,7 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
 
       {/* Navigation Items */}
       <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {items.map((item, index) => (
             <motion.button
               key={item.href}

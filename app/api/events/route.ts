@@ -35,6 +35,7 @@ export async function GET() {
           id: event._id.toString(),
           title: event.title,
           date: event.date,
+          end_date: event.end_date,
           time: `${event.start_time} - ${event.end_time}`,
           location: event.location || 'TBD',
           image: event.poster_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',

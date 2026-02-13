@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
               _id: eventData._id,
               title: eventData.title,
               date: eventData.date,
+              end_date: eventData.end_date,
               start_time: eventData.start_time,
               end_time: eventData.end_time,
               location: eventData.location,

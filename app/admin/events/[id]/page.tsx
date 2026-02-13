@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
+import { formatDateRange } from '@/lib/utils';
 import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock } from 'lucide-react';
 
 const sidebarItems = [
@@ -55,6 +56,7 @@ interface EventDetail {
     faculty_coordinator_name: string;
   };
   date: string;
+  end_date?: string;
   start_time: string;
   end_time: string;
   location: string;
@@ -312,7 +314,7 @@ export default function EventDetailsPage() {
                     <div className="flex flex-wrap gap-4 text-[#666666] text-sm">
                       <div className="flex items-center gap-2">
                         <Calendar size={18} />
-                        {new Date(event.date).toLocaleDateString('en-GB')}
+                        {formatDateRange(event.date, event.end_date, 'en-GB')}
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock size={18} />
@@ -415,7 +417,7 @@ export default function EventDetailsPage() {
                               ))}
                           </select>
                           <p className="text-xs text-[#999999] mt-2">
-                            Only venues available on {event?.date} from {event?.start_time} to {event?.end_time} are shown
+                            Only venues available on {formatDateRange(event?.date, event?.end_date, 'en-GB')} from {event?.start_time} to {event?.end_time} are shown
                           </p>
                         </div>
                         {selectedVenueId && (
