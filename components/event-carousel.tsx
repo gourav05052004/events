@@ -15,6 +15,9 @@ interface Event {
   status: 'pending' | 'approved' | 'cancelled';
   attendees?: number;
   maxAttendees?: number;
+  clubLogo?: string;
+  clubName?: string;
+  brandColor?: string;
 }
 
 interface EventCarouselProps {

@@ -60,14 +60,41 @@ export default function ClubTeamPage() {
     image: '',
   });
 
+  const resolveClubId = async () => {
+    const storedClubId = window.localStorage.getItem('clubId');
+    if (storedClubId) {
+      return storedClubId;
+    }
+
+    try {
+      const response = await fetch('/api/club/me');
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const clubId = data?.club?.id;
+      if (clubId) {
+        window.localStorage.setItem('clubId', clubId);
+        return clubId as string;
+      }
+    } catch (error) {
+      console.error('Failed to resolve club ID:', error);
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     fetchTeamData();
   }, []);
 
   const fetchTeamData = async () => {
-    const clubId = window.localStorage.getItem('clubId');
+    const clubId = await resolveClubId();
     if (!clubId) {
       setIsLoading(false);
+      toast.error('Session expired. Please login again.');
+      router.push('/login?role=club');
       return;
     }
 
@@ -108,9 +135,10 @@ export default function ClubTeamPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const clubId = window.localStorage.getItem('clubId');
+    const clubId = await resolveClubId();
     if (!clubId) {
-      toast.error('Club ID not found');
+      toast.error('Session expired. Please login again.');
+      router.push('/login?role=club');
       return;
     }
 
@@ -156,9 +184,10 @@ export default function ClubTeamPage() {
   };
 
   const handleSave = async () => {
-    const clubId = window.localStorage.getItem('clubId');
+    const clubId = await resolveClubId();
     if (!clubId) {
-      toast.error('Club ID not found');
+      toast.error('Session expired. Please login again.');
+      router.push('/login?role=club');
       return;
     }
 

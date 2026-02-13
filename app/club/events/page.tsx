@@ -57,14 +57,41 @@ export default function ClubEventsPage() {
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const resolveClubId = async () => {
+    const storedClubId = window.localStorage.getItem('clubId');
+    if (storedClubId) {
+      return storedClubId;
+    }
+
+    try {
+      const response = await fetch('/api/club/me');
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const clubId = data?.club?.id;
+      if (clubId) {
+        window.localStorage.setItem('clubId', clubId);
+        return clubId as string;
+      }
+    } catch (error) {
+      console.error('Failed to resolve club ID:', error);
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     const fetchEvents = async () => {
-      const clubId = window.localStorage.getItem('clubId');
+      const clubId = await resolveClubId();
       console.log('Fetching events for clubId:', clubId);
       
       if (!clubId) {
         console.warn('No clubId found in localStorage');
         setIsLoading(false);
+        toast.error('Session expired. Please login again.');
+        router.push('/login?role=club');
         return;
       }
 

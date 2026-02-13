@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
@@ -16,51 +16,93 @@ const sidebarItems = [
   { label: 'My Profile', href: '/student/profile' },
 ];
 
-const registeredEvents = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    date: 'Feb 25, 2025',
-    time: '8:00 AM',
-    location: 'Sports Ground',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-  },
-];
+interface EventData {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  image: string;
+  status: 'approved' | 'pending' | 'cancelled';
+  club?: string;
+}
 
-const upcomingEvents = [
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    date: 'Feb 20, 2025',
-    time: '2:00 PM',
-    location: 'Lab 101',
-    image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=300&h=200&fit=crop',
-    status: 'approved' as const,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    date: 'Mar 5, 2025',
-    time: '9:00 AM',
-    location: 'Conference Hall',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
-    status: 'pending' as const,
-  },
-];
+interface DashboardData {
+  student: {
+    name: string;
+    email: string;
+  };
+  statistics: {
+    totalRegistered: number;
+    totalCompleted: number;
+    totalUpcoming: number;
+    newNotifications: number;
+  };
+  myRegisteredEvents: EventData[];
+  upcomingEvents: EventData[];
+}
 
 export default function StudentDashboard() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [studentName, setStudentName] = useState('Student');
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch('/api/student/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          router.push('/login');
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const result = await response.json();
+        setDashboardData(result.data);
+        
+        // Set student name from API response
+        if (result.data.student?.name) {
+          setStudentName(result.data.student.name);
+          // Also store in localStorage for future sessions
+          localStorage.setItem('studentName', result.data.student.name);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [router]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -76,6 +118,49 @@ export default function StudentDashboard() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA]">
+        <Navbar title="Student Dashboard" userRole="student" />
+        <Sidebar
+          items={sidebarItems}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+        <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto"></div>
+            <p className="mt-4 text-[#666666]">Loading dashboard...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-[#F8F9FA]">
+        <Navbar title="Student Dashboard" userRole="student" />
+        <Sidebar
+          items={sidebarItems}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
+        />
+        <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-red-600">Error: {error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-[#8B1E26] text-white rounded hover:bg-[#6d1720]"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
@@ -94,7 +179,9 @@ export default function StudentDashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome back, Alex!</h1>
+            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">
+              Welcome back, {studentName}!
+            </h1>
             <p className="text-[#666666]">Here's an overview of your upcoming events and activities.</p>
           </motion.div>
 
@@ -108,25 +195,23 @@ export default function StudentDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="Registered Events"
-                value="12"
+                value={dashboardData?.statistics.totalRegistered.toString() || '0'}
                 icon={<Calendar size={32} />}
                 color="primary"
-                trend={{ value: 8, direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Completed Events"
-                value="8"
+                value={dashboardData?.statistics.totalCompleted.toString() || '0'}
                 icon={<Trophy size={32} />}
                 color="success"
-                trend={{ value: 3, direction: 'up' }}
               />
             </motion.div>
             <motion.div variants={item}>
               <StatsCard
                 title="Upcoming"
-                value="4"
+                value={dashboardData?.statistics.totalUpcoming.toString() || '0'}
                 icon={<BookOpen size={32} />}
                 color="warning"
               />
@@ -134,7 +219,7 @@ export default function StudentDashboard() {
             <motion.div variants={item}>
               <StatsCard
                 title="New Notifications"
-                value="3"
+                value={dashboardData?.statistics.newNotifications.toString() || '0'}
                 icon={<Bell size={32} />}
                 color="danger"
               />
@@ -160,17 +245,27 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {registeredEvents.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
-                </motion.div>
-              ))}
+              {dashboardData?.myRegisteredEvents && dashboardData.myRegisteredEvents.length > 0 ? (
+                dashboardData.myRegisteredEvents.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <EventCard 
+                      {...event} 
+                      date={formatDate(event.date)}
+                      onClick={() => router.push(`/event/${event.id}`)} 
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12 text-[#666666]">
+                  <p>No registered events yet. Browse events to get started!</p>
+                </div>
+              )}
             </div>
           </motion.section>
 
@@ -192,17 +287,27 @@ export default function StudentDashboard() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {upcomingEvents.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
-                </motion.div>
-              ))}
+              {dashboardData?.upcomingEvents && dashboardData.upcomingEvents.length > 0 ? (
+                dashboardData.upcomingEvents.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <EventCard 
+                      {...event} 
+                      date={formatDate(event.date)}
+                      onClick={() => router.push(`/event/${event.id}`)} 
+                    />
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12 text-[#666666]">
+                  <p>No upcoming events available at the moment.</p>
+                </div>
+              )}
             </div>
           </motion.section>
         </div>

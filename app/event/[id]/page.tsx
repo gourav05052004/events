@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { StatusBadge } from '@/components/status-badge';
 import { Modal } from '@/components/modal';
-import { Calendar, MapPin, Users, Share2, Heart, CheckCircle, Loader, AlertCircle, X, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Share2, CheckCircle, Loader, AlertCircle, X, Plus } from 'lucide-react';
 
 interface EventDetail {
   _id: string;
@@ -42,15 +42,21 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', rollNumber: '' });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
+    
     fetchEventDetails();
-    checkRegistrationStatus();
+    if (token) {
+      checkRegistrationStatus();
+    }
   }, [eventId]);
 
   const checkRegistrationStatus = async () => {
@@ -109,6 +115,15 @@ export default function EventDetailPage() {
   };
 
   const handleRegister = async () => {
+    // Check if user is logged in before allowing registration
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please login to register for this event');
+      // Redirect to login with return URL
+      router.push(`/login?role=student&redirect=/event/${eventId}`);
+      return;
+    }
+
     const isGroupEvent = event?.event_type?.toLowerCase().includes('group');
     
     if (registrationStep === 1) {
@@ -212,9 +227,44 @@ export default function EventDetailPage() {
     }
   };
 
-  const handleToggleFavorite = () => {
-    setIsFavorited(!isFavorited);
-    toast.success(isFavorited ? 'Removed from favorites' : 'Added to favorites');
+  const handleShare = async () => {
+    if (!event) return;
+    
+    const eventUrl = window.location.href;
+    const shareData = {
+      title: event.title,
+      text: `Check out this event: ${event.title}`,
+      url: eventUrl,
+    };
+
+    try {
+      // Check if Web Share API is available (works better on mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+        toast.success('Event shared successfully!');
+      } else if (navigator.share) {
+        // Fallback for browsers that support share but not canShare
+        await navigator.share(shareData);
+        toast.success('Event shared successfully!');
+      } else {
+        // Fallback to clipboard for desktop
+        await navigator.clipboard.writeText(eventUrl);
+        toast.success('Event link copied to clipboard!');
+      }
+    } catch (err) {
+      const error = err as Error;
+      // User cancelled the share, don't show error
+      if (error.name === 'AbortError') {
+        return;
+      }
+      // For other errors, try clipboard as fallback
+      try {
+        await navigator.clipboard.writeText(eventUrl);
+        toast.success('Event link copied to clipboard!');
+      } catch {
+        toast.error('Unable to share. Please copy the URL manually.');
+      }
+    }
   };
 
   const handleCancelRegistration = async () => {
@@ -264,7 +314,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
+        <Navbar title="Event Details" hideLoginButton={true} />
         <div className="flex items-center justify-center h-96">
           <Loader className="w-8 h-8 text-[#8B1E26] animate-spin" />
         </div>
@@ -275,7 +325,7 @@ export default function EventDetailPage() {
   if (error || !event) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
+        <Navbar title="Event Details" hideLoginButton={true} />
         <div className="max-w-5xl mx-auto px-4 py-12 flex items-center justify-center">
           <div className="bg-white rounded-xl p-8 border border-red-200 w-full max-w-md">
             <AlertCircle className="text-red-600 mx-auto mb-4" size={48} />
@@ -302,7 +352,7 @@ export default function EventDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" showBackButton={true} onBackClick={() => router.back()} hideLoginButton={true} />
+      <Navbar title="Event Details" hideLoginButton={true} />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
         {/* Hero Image */}
@@ -322,21 +372,12 @@ export default function EventDetailPage() {
           <div className="relative w-full h-full flex items-center justify-center">
             
           </div>
-          <div className="absolute top-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4 z-10">
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={handleToggleFavorite}
-              className={`p-3 rounded-full backdrop-blur-sm transition-all ${
-                isFavorited
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white/80 text-[#2D2D2D] hover:bg-white'
-              }`}
-            >
-              <Heart size={24} fill={isFavorited ? 'currentColor' : 'none'} />
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              className="p-3 rounded-full bg-white/80 text-[#2D2D2D] backdrop-blur-sm hover:bg-white transition-all"
+              onClick={handleShare}
+              className="p-3 sm:p-3 rounded-full bg-white text-[#2D2D2D] hover:bg-white/90 transition-all shadow-lg active:shadow-xl touch-manipulation"
+              style={{ minWidth: '48px', minHeight: '48px' }}
             >
               <Share2 size={24} />
             </motion.button>
@@ -433,6 +474,23 @@ export default function EventDetailPage() {
             className="lg:col-span-1"
           >
             <div className="bg-white rounded-xl p-6 border border-[#E8E8E8] sticky top-24">
+              {isLoggedIn && (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/student/dashboard')}
+                  className="w-full mb-4 px-4 py-2 bg-[#F8F9FA] text-[#2D2D2D] rounded-lg font-medium hover:bg-[#E8E8E8] transition-all flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                  </svg>
+                  Go to Dashboard
+                </motion.button>
+              )}
+              
               {isRegistered ? (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -485,6 +543,15 @@ export default function EventDetailPage() {
                           <p className="text-[#666666] text-sm mb-6">
                             {event.max_participants - event.registrations} seats available
                           </p>
+                          
+                          {!isLoggedIn && (
+                            <div className="bg-[#FFFBEA] border border-[#F59E0B] rounded-lg p-3 mb-4">
+                              <p className="text-sm text-[#92400E] text-center">
+                                Please login to register for this event
+                              </p>
+                            </div>
+                          )}
+                          
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -492,7 +559,7 @@ export default function EventDetailPage() {
                             disabled={isSubmitting}
                             className="w-full px-4 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50"
                           >
-                            {isSubmitting ? 'Processing...' : 'Register Now'}
+                            {isSubmitting ? 'Processing...' : (isLoggedIn ? 'Register Now' : 'Login to Register')}
                           </motion.button>
                         </motion.div>
                       )}
@@ -650,14 +717,6 @@ export default function EventDetailPage() {
                   )}
                 </>
               )}
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full mt-3 px-4 py-2 border-2 border-[#E8E8E8] text-[#2D2D2D] rounded-lg font-bold hover:bg-[#F8F9FA] transition-all"
-              >
-                Learn More
-              </motion.button>
             </div>
           </motion.div>
         </div>

@@ -50,14 +50,41 @@ export default function ClubSettingsPage() {
     confirmPassword: '',
   });
 
+  const resolveClubId = async () => {
+    const storedClubId = window.localStorage.getItem('clubId');
+    if (storedClubId) {
+      return storedClubId;
+    }
+
+    try {
+      const response = await fetch('/api/club/me');
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const clubId = data?.club?.id;
+      if (clubId) {
+        window.localStorage.setItem('clubId', clubId);
+        return clubId as string;
+      }
+    } catch (error) {
+      console.error('Failed to resolve club ID:', error);
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
 
   const fetchSettings = async () => {
-    const clubId = window.localStorage.getItem('clubId');
+    const clubId = await resolveClubId();
     if (!clubId) {
       setIsLoading(false);
+      toast.error('Session expired. Please login again.');
+      router.push('/login?role=club');
       return;
     }
 
@@ -78,9 +105,10 @@ export default function ClubSettingsPage() {
   };
 
   const handleSave = async () => {
-    const clubId = window.localStorage.getItem('clubId');
+    const clubId = await resolveClubId();
     if (!clubId) {
-      toast.error('Club ID not found');
+      toast.error('Session expired. Please login again.');
+      router.push('/login?role=club');
       return;
     }
 

@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     const token = generateToken({
       id: student._id.toString(),
       email: student.email,
+      name: student.name,
       role: 'student',
     });
 

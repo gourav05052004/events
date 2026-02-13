@@ -112,7 +112,6 @@ export default function EventsPage() {
       <Navbar title="Browse Events" userRole="student" />
       <Sidebar
         items={sidebarItems}
-        onLogout={() => router.push('/')}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />

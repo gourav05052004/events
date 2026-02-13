@@ -1,57 +1,26 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { EventCarousel } from '@/components/event-carousel';
 import { ArrowRight, Calendar, Users, Trophy } from 'lucide-react';
 
-const upcomingEvents = [
-  {
-    id: '1',
-    title: 'Annual Tech Summit 2025',
-    date: 'Feb 15, 2025',
-    time: '10:00 AM - 5:00 PM',
-    location: 'Main Auditorium',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 245,
-    maxAttendees: 500,
-  },
-  {
-    id: '2',
-    title: 'AI & Machine Learning Workshop',
-    date: 'Feb 20, 2025',
-    time: '2:00 PM - 6:00 PM',
-    location: 'Lab 101',
-    image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 120,
-    maxAttendees: 200,
-  },
-  {
-    id: '3',
-    title: 'Sports Day Celebration',
-    date: 'Feb 25, 2025',
-    time: '8:00 AM - 3:00 PM',
-    location: 'Sports Ground',
-    image: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
-    status: 'approved' as const,
-    attendees: 600,
-    maxAttendees: 800,
-  },
-  {
-    id: '4',
-    title: 'Entrepreneurship Summit',
-    date: 'Mar 5, 2025',
-    time: '9:00 AM - 4:00 PM',
-    location: 'Conference Hall',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-    status: 'pending' as const,
-    attendees: 89,
-    maxAttendees: 300,
-  },
-];
+interface UpcomingEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  image: string;
+  status: 'approved' | 'pending' | 'cancelled';
+  attendees: number;
+  maxAttendees: number;
+  clubName?: string;
+  clubLogo?: string;
+  brandColor?: string;
+}
 
 const features = [
   {
@@ -73,6 +42,38 @@ const features = [
 
 export default function Home() {
   const router = useRouter();
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUpcomingEvents = async () => {
+      try {
+        const response = await fetch('/api/events');
+        const data = await response.json();
+        
+        if (data.success && data.events) {
+          // Format the events data
+          const formattedEvents = data.events.map((event: any) => ({
+            ...event,
+            date: new Date(event.date).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            }),
+          }));
+          setUpcomingEvents(formattedEvents);
+        }
+      } catch (error) {
+        console.error('Failed to fetch upcoming events:', error);
+        // Keep empty array on error
+        setUpcomingEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUpcomingEvents();
+  }, []);
 
   const container = {
     hidden: { opacity: 0 },
@@ -157,7 +158,15 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/student/events')}
+                onClick={() => {
+                  // Check if user is logged in to access student events page
+                  const token = localStorage.getItem('token');
+                  if (token) {
+                    router.push('/student/events');
+                  } else {
+                    router.push('/login?role=student&redirect=/student/events');
+                  }
+                }}
                 className="px-8 py-4 border-2 border-white text-white rounded-lg font-bold hover:bg-white/10 transition-colors"
               >
                 Browse Events
@@ -216,11 +225,24 @@ export default function Home() {
       {/* Events Carousel Section */}
       <section className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <EventCarousel
-            title="Upcoming Events"
-            events={upcomingEvents}
-            onEventClick={(eventId) => router.push(`/event/${eventId}`)}
-          />
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto mb-4"></div>
+              <p className="text-[#666666]">Loading upcoming events...</p>
+            </div>
+          ) : upcomingEvents.length > 0 ? (
+            <EventCarousel
+              title="Upcoming Events"
+              events={upcomingEvents}
+              onEventClick={(eventId) => router.push(`/event/${eventId}`)}
+            />
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="mx-auto mb-4 text-[#8B1E26]" size={48} />
+              <h3 className="text-xl font-bold text-[#2D2D2D] mb-2">No Upcoming Events</h3>
+              <p className="text-[#666666]">Check back later for new events!</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -253,7 +275,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/login?role=club')}
-              className="px-8 py-4 bg-[#FFC107] text-[#2D2D2D] rounded-lg font-bold hover:bg-[#FFB800] transition-colors"
+              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors"
             >
               Login as Club
             </motion.button>
@@ -261,7 +283,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/login?role=admin')}
-              className="px-8 py-4 border-2 border-white text-white rounded-lg font-bold hover:bg-white/10 transition-colors"
+              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors"
             >
               Login as Admin
             </motion.button>

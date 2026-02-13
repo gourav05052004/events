@@ -71,11 +71,38 @@ export default function ClubDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+  const resolveClubId = async () => {
+    const storedClubId = window.localStorage.getItem('clubId');
+    if (storedClubId) {
+      return storedClubId;
+    }
+
+    try {
+      const response = await fetch('/api/club/me');
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const clubId = data?.club?.id;
+      if (clubId) {
+        window.localStorage.setItem('clubId', clubId);
+        return clubId as string;
+      }
+    } catch (error) {
+      console.error('Failed to resolve club ID:', error);
+    }
+
+    return null;
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const clubId = window.localStorage.getItem('clubId');
+      const clubId = await resolveClubId();
       if (!clubId) {
         setIsLoading(false);
+        toast.error('Session expired. Please login again.');
+        router.push('/login?role=club');
         return;
       }
 
