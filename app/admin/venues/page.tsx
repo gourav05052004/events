@@ -1,13 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+// router not used in this view
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { AddVenueModal } from '@/components/add-venue-modal';
 import { EditVenueModal } from '@/components/edit-venue-modal';
-import { Search, Filter, Download, MapPin, Users, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Search, Download, MapPin, Users, Calendar, Plus } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -30,7 +30,6 @@ interface Venue {
 }
 
 export default function AdminVenuesPage() {
-  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');

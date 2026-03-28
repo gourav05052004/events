@@ -22,6 +22,7 @@ const initialFormData = {
   title: '',
   description: '',
   eventType: '',
+  categories: [] as string[],
   startDate: '',
   endDate: '',
   startTime: '',
@@ -44,6 +45,16 @@ export default function CreateEventPage() {
   const [submitError, setSubmitError] = useState('');
 
   const isTeamEvent = formData.eventType === 'TEAM';
+
+  const categoryOptions = ['Technical', 'Sports', 'Cultural', 'Entrepreneurship'];
+
+  const toggleCategory = (cat: string) => {
+    setFormData((prev) => {
+      const curr: string[] = Array.isArray(prev.categories) ? prev.categories : [];
+      const exists = curr.includes(cat);
+      return { ...prev, categories: exists ? curr.filter((c) => c !== cat) : [...curr, cat] };
+    });
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => {
@@ -127,6 +138,15 @@ export default function CreateEventPage() {
       return;
     }
 
+    // Validate categories (must be at least one)
+    if (!Array.isArray(formData.categories) || formData.categories.length === 0) {
+      const errorMsg = 'Please select at least one event category.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
+      setIsSubmitting(false);
+      return;
+    }
+
     if (!posterImage) {
       const errorMsg = 'Please upload an event poster.';
       setSubmitError(errorMsg);
@@ -194,6 +214,7 @@ export default function CreateEventPage() {
     }
     
     payload.append('collaboratingClubs', formData.collaboratingClubs);
+    payload.append('categories', JSON.stringify(formData.categories || []));
     payload.append('poster', posterImage);
 
     try {
@@ -333,6 +354,29 @@ export default function CreateEventPage() {
                 />
               </motion.div>
 
+              <motion.div variants={item}>
+                <div>
+                  <label className="block text-sm font-medium text-[#2D2D2D] mb-2">
+                    Event Categories <span className="text-[#D32F2F]">*</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryOptions.map((cat) => {
+                      const selected = Array.isArray(formData.categories) && formData.categories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className={`px-3 py-1.5 rounded-full border transition-all text-sm ${selected ? 'bg-[#8B1E26] text-white border-[#8B1E26]' : 'bg-white text-[#2D2D2D] border-[#E8E8E8]'}`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+
               <motion.div variants={item} className="grid md:grid-cols-2 gap-6">
                 <InputField
                   type="date"
@@ -394,7 +438,7 @@ export default function CreateEventPage() {
                   label="Registration Deadline"
                   value={formData.registrationDeadline}
                   onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
-                  max={formData.startDate || undefined}
+                  max={formData.endDate || undefined}
                   required
                 />
               </motion.div>

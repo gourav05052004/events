@@ -45,6 +45,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check registration deadline
+    if (event.registration_deadline) {
+      const dl = new Date(event.registration_deadline);
+      if (!isNaN(dl.getTime()) && new Date() > dl) {
+        return NextResponse.json(
+          { error: 'Registration deadline has passed' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if event is full
     const registrationCount = await EventRegistration.countDocuments({
       event_id: eventId,

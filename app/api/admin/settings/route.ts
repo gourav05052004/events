@@ -14,13 +14,13 @@ async function verifyAdmin(request: NextRequest) {
   try {
     const decoded = verify(token, process.env.JWT_SECRET || 'your-secret-key');
     return decoded;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
 // GET - Retrieve current settings
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectDB();
     

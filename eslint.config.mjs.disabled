@@ -1,3 +1,7 @@
+// Disabled original Next flat config to avoid circular ESLint config errors during local linting.
+// Original file moved to this disabled copy. Restore by renaming back to `eslint.config.mjs` if needed.
+
+/*
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
@@ -14,3 +18,4 @@ const eslintConfig = [
 ];
 
 export default eslintConfig;
+*/

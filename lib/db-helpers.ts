@@ -1,9 +1,5 @@
 import connectDB from './db';
 import {
-  Admin,
-  Club,
-  Student,
-  Resource,
   Event,
   EventClub,
   EventRegistration,
@@ -11,9 +7,6 @@ import {
   TeamMember,
   EventSlot,
   ActivityLog,
-  type IAdmin,
-  type IClub,
-  type IStudent,
   type IEvent,
   type IEventRegistration,
   type ITeam,

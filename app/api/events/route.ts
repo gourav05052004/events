@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Event from '@/models/Event';
 import EventRegistration from '@/models/EventRegistration';
-import Club from '@/models/Club';
 
 /**
  * GET /api/events

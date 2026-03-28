@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Event, EventRegistration, Club } from '@/models';
+import { Event, EventRegistration } from '@/models';
 
 /**
  * GET /api/admin/events
  * Fetch all events with related club information
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await connectDB();
 
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
           club_logo: event.primary_club_id?.logo || '',
           club_brand_color: event.primary_club_id?.brand_color || '#8B1E26',
           date: event.date,
+          registration_deadline: event.registration_deadline,
           end_date: event.end_date,
           start_time: event.start_time,
           end_time: event.end_time,
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
           resource_type: event.requested_resource_type,
           description: event.description,
           poster_url: event.poster_url || '',
+          categories: event.categories || [],
           created_at: event.created_at,
         };
       })

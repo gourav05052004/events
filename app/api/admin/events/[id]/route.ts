@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Event, EventRegistration, Club, Student, Resource } from '@/models';
+import { Event, EventRegistration, Resource } from '@/models';
+// Notification system removed: Student/Notification imports not required here
 import { Types } from 'mongoose';
 
 /**
@@ -132,7 +133,11 @@ export async function PUT(
       }
     }
 
+    const previousStatus = event.status;
+
     await event.save();
+
+    // Notifications creation removed — approval proceeds without creating notifications
 
     // Fetch updated event with relations
     const updatedEvent = await Event.findById(id)

@@ -1,6 +1,6 @@
 'use client';
 
-import { InputHTMLAttributes, TextareaHTMLAttributes, ReactNode } from 'react';
+import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react';
 import { motion } from 'framer-motion';
 
 interface FormFieldProps {
@@ -77,6 +77,10 @@ export function TextareaField({
   );
 }
 
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement>, FormFieldProps {
+  options: Array<{ value: string; label: string }>;
+}
+
 export function SelectField({
   label,
   error,
@@ -85,7 +89,7 @@ export function SelectField({
   options,
   className = '',
   ...props
-}: InputFieldProps & { options: Array<{ value: string; label: string }> }) {
+}: SelectFieldProps) {
   return (
     <FormField label={label} error={error} required={required} helperText={helperText}>
       <select

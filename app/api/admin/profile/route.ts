@@ -5,7 +5,7 @@ import Admin from '@/models/Admin';
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = req.headers.get('Authorization')?.split(' ')[1] || 
                   cookieStore.get('admin_token')?.value;
 

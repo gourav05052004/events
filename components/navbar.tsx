@@ -26,6 +26,7 @@ export function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -40,6 +41,8 @@ export function Navbar({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [profileDropdown]);
+
+  // Notifications removed: keep bell icon but no unread count or listeners
 
   const navigationItems = {
     student: [
@@ -59,15 +62,7 @@ export function Navbar({
 
   const items = userRole ? navigationItems[userRole] : [];
 
-  const handleMobileMenuClick = () => {
-    // Call the external onMenuClick if provided
-    if (onMenuClick) {
-      onMenuClick();
-    } else {
-      // Otherwise use internal state
-      setMobileMenuOpen(!mobileMenuOpen);
-    }
-  };
+  // Mobile menu toggling handled inline where needed; removed unused helper.
 
   return (
     <motion.nav
@@ -118,71 +113,48 @@ export function Navbar({
               </motion.button>
             ))}
             {userRole ? (
-              <div className="relative" ref={profileRef}>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setProfileDropdown(!profileDropdown)}
-                  className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520] flex items-center gap-2"
-                >
-                  <User size={18} />
-                  Profile
-                </motion.button>
-                {profileDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
+              <div className="relative flex items-center gap-4">
+                {/* Notifications removed */}
+
+                <div className="relative" ref={profileRef}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setProfileDropdown(!profileDropdown)}
+                    className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520] flex items-center gap-2"
                   >
-                    {/* Profile Info Header */}
-                    <div className="bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
-                      <p className="text-sm font-semibold">My Account</p>
-                    </div>
+                    <User size={18} />
+                    Profile
+                  </motion.button>
 
-                    {/* View Profile Option */}
-                    {userRole === 'student' && (
-                      <button
-                        onClick={() => {
-                          router.push('/student/profile');
-                          setProfileDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
-                      >
-                        <User size={16} />
-                        View Profile
-                      </button>
-                    )}
+                  {profileDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
+                    >
+                      <div className="bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
+                        <p className="text-sm font-semibold">My Account</p>
+                      </div>
 
-                    {/* Settings Option */}
-                    {userRole === 'admin' && (
-                      <button
-                        onClick={() => {
-                          router.push('/admin/settings');
-                          setProfileDropdown(false);
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
-                      >
-                        <User size={16} />
-                        Settings
-                      </button>
-                    )}
-
-                    {userRole === 'club' && (
-                      <>
+                      {userRole === 'student' && (
                         <button
                           onClick={() => {
-                            router.push('/club/dashboard');
+                            router.push('/student/profile');
                             setProfileDropdown(false);
                           }}
                           className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
                         >
                           <User size={16} />
-                          Dashboard
+                          View Profile
                         </button>
+                      )}
+
+                      {userRole === 'admin' && (
                         <button
                           onClick={() => {
-                            router.push('/club/settings');
+                            router.push('/admin/settings');
                             setProfileDropdown(false);
                           }}
                           className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
@@ -190,40 +162,64 @@ export function Navbar({
                           <User size={16} />
                           Settings
                         </button>
-                        <button
-                          onClick={() => {
-                            router.push('/club/team');
-                            setProfileDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
-                        >
-                          <User size={16} />
-                          Team Management
-                        </button>
-                      </>
-                    )}
+                      )}
 
-                    {/* Logout Option */}
-                    <button
-                      onClick={() => {
-                        // Clear all auth tokens and data
-                        window.localStorage.removeItem('clubId');
-                        window.localStorage.removeItem('studentId');
-                        window.localStorage.removeItem('adminId');
-                        window.localStorage.removeItem('token');
-                        document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                        document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                        document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                        setProfileDropdown(false);
-                        router.push('/login');
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors font-medium"
-                    >
-                      <LogOut size={16} />
-                      Logout
-                    </button>
-                  </motion.div>
-                )}
+                      {userRole === 'club' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              router.push('/club/dashboard');
+                              setProfileDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
+                          >
+                            <User size={16} />
+                            Dashboard
+                          </button>
+                          <button
+                            onClick={() => {
+                              router.push('/club/settings');
+                              setProfileDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
+                          >
+                            <User size={16} />
+                            Settings
+                          </button>
+                          <button
+                            onClick={() => {
+                              router.push('/club/team');
+                              setProfileDropdown(false);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-[#2D2D2D] hover:bg-[#F8F9FA] flex items-center gap-2 border-b border-[#E8E8E8] transition-colors"
+                          >
+                            <User size={16} />
+                            Team Management
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          // Clear all auth tokens and data
+                          window.localStorage.removeItem('clubId');
+                          window.localStorage.removeItem('studentId');
+                          window.localStorage.removeItem('adminId');
+                          window.localStorage.removeItem('token');
+                          document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                          document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                          document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                          setProfileDropdown(false);
+                          router.push('/login');
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors font-medium"
+                      >
+                        <LogOut size={16} />
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             ) : !hideLoginButton ? (
               <motion.button

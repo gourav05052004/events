@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
-import { InputField, SelectField, TextareaField } from '@/components/form-field';
+import { InputField, TextareaField } from '@/components/form-field';
 import toast from 'react-hot-toast';
 import {
   Settings,

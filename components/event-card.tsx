@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, Users, Hourglass } from 'lucide-react';
 import { StatusBadge } from './status-badge';
 
 interface EventCardProps {
@@ -19,10 +19,23 @@ interface EventCardProps {
   brandColor?: string;
   onClick?: () => void;
   className?: string;
+  registrationDeadline?: string;
+}
+
+// Helper to format registration deadline
+function formatDeadline(deadline?: string) {
+  if (!deadline) return '';
+  const dateObj = new Date(deadline);
+  if (isNaN(dateObj.getTime())) return deadline;
+  const day = dateObj.getDate().toString().padStart(2, '0');
+  const month = dateObj.toLocaleString('default', { month: 'short' });
+  const year = dateObj.getFullYear();
+  const hour = dateObj.getHours().toString().padStart(2, '0');
+  const minute = dateObj.getMinutes().toString().padStart(2, '0');
+  return `Ends on ${day} ${month} ${year}, ${hour}:${minute}`;
 }
 
 export function EventCard({
-  id,
   title,
   date,
   time,
@@ -36,7 +49,9 @@ export function EventCard({
   brandColor = '#8B1E26',
   onClick,
   className = '',
+  registrationDeadline,
 }: EventCardProps) {
+
   return (
     <motion.div
       whileHover={{ y: -8, boxShadow: '0 20px 40px rgba(139, 30, 38, 0.15)' }}
@@ -85,6 +100,12 @@ export function EventCard({
             <Calendar size={16} style={{ color: brandColor }} />
             <span>{time}</span>
           </div>
+          {registrationDeadline && (
+            <div className="flex items-center gap-2">
+              <Hourglass size={16} style={{ color: brandColor }} />
+              <span>{formatDeadline(registrationDeadline)}</span>
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <MapPin size={16} style={{ color: brandColor }} />
             <span className="truncate">{location}</span>

@@ -15,7 +15,7 @@ const sidebarItems = [
   { label: 'My Profile', href: '/student/profile', active: true },
 ];
 
-interface StudentProfile {
+interface IStudentProfile {
   _id: string;
   name: string;
   email: string;
@@ -30,7 +30,7 @@ export default function StudentProfile() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [profile, setProfile] = useState<IStudentProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

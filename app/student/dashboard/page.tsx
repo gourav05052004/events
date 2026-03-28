@@ -8,7 +8,7 @@ import { Sidebar } from '@/components/sidebar';
 import { StatsCard } from '@/components/stats-card';
 import { EventCard } from '@/components/event-card';
 import { formatDateRange } from '@/lib/utils';
-import { Calendar, BookOpen, Trophy, Bell } from 'lucide-react';
+import { Calendar, BookOpen, Trophy } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard', active: true },
@@ -93,8 +93,9 @@ export default function StudentDashboard() {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
+
+    return () => {};
   }, [router]);
 
   const formatDate = (startDate: string, endDate?: string) => {
@@ -187,7 +188,7 @@ export default function StudentDashboard() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="grid md:grid-cols-4 gap-6 mb-12"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
           >
             <motion.div variants={item}>
               <StatsCard
@@ -213,14 +214,7 @@ export default function StudentDashboard() {
                 color="warning"
               />
             </motion.div>
-            <motion.div variants={item}>
-              <StatsCard
-                title="New Notifications"
-                value={dashboardData?.statistics.newNotifications.toString() || '0'}
-                icon={<Bell size={32} />}
-                color="danger"
-              />
-            </motion.div>
+            
           </motion.div>
 
           {/* My Registered Events */}
@@ -251,10 +245,10 @@ export default function StudentDashboard() {
                     transition={{ delay: index * 0.1 }}
                     viewport={{ once: true }}
                   >
-                    <EventCard 
-                      {...event} 
+                    <EventCard
+                      {...event}
                       date={formatDate(event.date, event.end_date)}
-                      onClick={() => router.push(`/event/${event.id}`)} 
+                      onClick={() => router.push(`/event/${event.id}`)}
                     />
                   </motion.div>
                 ))
@@ -293,10 +287,10 @@ export default function StudentDashboard() {
                     transition={{ delay: index * 0.1 }}
                     viewport={{ once: true }}
                   >
-                    <EventCard 
-                      {...event} 
+                    <EventCard
+                      {...event}
                       date={formatDate(event.date, event.end_date)}
-                      onClick={() => router.push(`/event/${event.id}`)} 
+                      onClick={() => router.push(`/event/${event.id}`)}
                     />
                   </motion.div>
                 ))

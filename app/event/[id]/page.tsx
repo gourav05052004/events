@@ -5,10 +5,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
-import { StatusBadge } from '@/components/status-badge';
 import { Modal } from '@/components/modal';
 import { formatDateRange } from '@/lib/utils';
-import { Calendar, MapPin, Users, Share2, CheckCircle, Loader, AlertCircle, X, Plus } from 'lucide-react';
+import { Calendar, MapPin, Users, Share2, CheckCircle, Loader, AlertCircle, X, Plus, Hourglass } from 'lucide-react';
 
 interface EventDetail {
   _id: string;
@@ -19,6 +18,7 @@ interface EventDetail {
   start_time: string;
   end_time: string;
   location: string;
+  registration_deadline?: string;
   status: 'approved' | 'pending' | 'cancelled';
   club_name: string;
   registrations: number;
@@ -126,6 +126,15 @@ export default function EventDetailPage() {
       // Redirect to login with return URL
       router.push(`/login?role=student&redirect=/event/${eventId}`);
       return;
+    }
+
+    // Block registration after deadline
+    if (event?.registration_deadline) {
+      const dl = new Date(event.registration_deadline);
+      if (!isNaN(dl.getTime()) && new Date() > dl) {
+        toast.error('Registration has closed for this event');
+        return;
+      }
     }
 
     const isGroupEvent = event?.event_type?.toLowerCase().includes('group');
@@ -276,6 +285,14 @@ export default function EventDetailPage() {
       return;
     }
 
+    // Block cancellation after deadline
+    if (event?.registration_deadline) {
+      const dl = new Date(event.registration_deadline);
+      if (!isNaN(dl.getTime()) && new Date() > dl) {
+        toast.error('Cancellation period has ended for this event');
+        return;
+      }
+    }
     try {
       setIsSubmitting(true);
       const token = localStorage.getItem('token');
@@ -350,6 +367,25 @@ export default function EventDetailPage() {
   const registrationPercentage = Math.round((event.registrations / event.max_participants) * 100);
   const eventDate = formatDateRange(event.date, event.end_date, 'en-GB');
 
+  function formatDeadline(deadline?: string) {
+    if (!deadline) return 'TBD';
+    const d = new Date(deadline);
+    if (isNaN(d.getTime())) return 'TBD';
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = d.toLocaleString('default', { month: 'short' });
+    const year = d.getFullYear();
+    const hour = d.getHours().toString().padStart(2, '0');
+    const minute = d.getMinutes().toString().padStart(2, '0');
+    return `Ends on ${day} ${month} ${year}, ${hour}:${minute}`;
+  }
+
+  const isPastDeadline = (() => {
+    if (!event?.registration_deadline) return false;
+    const d = new Date(event.registration_deadline);
+    if (isNaN(d.getTime())) return false;
+    return new Date() > d;
+  })();
+
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
       <Navbar title="Event Details" hideLoginButton={true} />
@@ -417,6 +453,15 @@ export default function EventDetailPage() {
                     <p className="font-bold text-[#2D2D2D]">{event.start_time} - {event.end_time}</p>
                   </div>
                 </div>
+                {event.registration_deadline && (
+                  <div className="flex items-center gap-3">
+                    <Hourglass className="text-[#8B1E26]" size={24} />
+                    <div>
+                      <p className="text-sm text-[#666666]">Registration Deadline</p>
+                      <p className="font-bold text-[#2D2D2D]">{formatDeadline(event.registration_deadline)}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <MapPin className="text-[#8B1E26]" size={24} />
                   <div>
@@ -523,9 +568,10 @@ export default function EventDetailPage() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCancelRegistration}
-                    className="w-full px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold hover:bg-[#8B1E26]/5 transition-all"
+                    disabled={isPastDeadline}
+                    className={`w-full px-4 py-2 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-200 text-gray-600 border border-gray-200 cursor-not-allowed' : 'border-2 border-[#8B1E26] text-[#8B1E26] hover:bg-[#8B1E26]/5'}`}
                   >
-                    Cancel Registration
+                    {isPastDeadline ? 'Cancellation Closed' : 'Cancel Registration'}
                   </motion.button>
                 </motion.div>
               ) : (
@@ -567,10 +613,10 @@ export default function EventDetailPage() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleRegister}
-                            disabled={isSubmitting}
-                            className="w-full px-4 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50"
+                            disabled={isSubmitting || isPastDeadline}
+                            className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
                           >
-                            {isSubmitting ? 'Processing...' : (isLoggedIn ? 'Register Now' : 'Login to Register')}
+                            {isPastDeadline ? 'Registration Closed' : (isSubmitting ? 'Processing...' : (isLoggedIn ? 'Register Now' : 'Login to Register'))}
                           </motion.button>
                         </motion.div>
                       )}

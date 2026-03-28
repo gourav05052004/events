@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
     
     return NextResponse.json({ success: true, data: venue });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Failed to fetch venue' }, { status: 500 });
   }
 }
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
     
     return NextResponse.json({ success: true, data: venue });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Failed to update venue' }, { status: 500 });
   }
 }
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
     
     return NextResponse.json({ success: true, data: venue });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, error: 'Failed to delete venue' }, { status: 500 });
   }
 }

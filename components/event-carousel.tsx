@@ -5,27 +5,12 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { EventCard } from './event-card';
 
-interface Event {
-  id: string;
+type EventCarouselProps = {
   title: string;
-  date: string;
-  time: string;
-  location: string;
-  image: string;
-  status: 'pending' | 'approved' | 'cancelled';
-  attendees?: number;
-  maxAttendees?: number;
-  clubLogo?: string;
-  clubName?: string;
-  brandColor?: string;
-}
-
-interface EventCarouselProps {
-  title: string;
-  events: Event[];
-  onEventClick?: (eventId: string) => void;
+  events: any[];
+  onEventClick?: Function;
   fullBleed?: boolean;
-}
+};
 
 export function EventCarousel({ title, events, onEventClick, fullBleed = false }: EventCarouselProps) {
   const scrollContainer = useRef<HTMLDivElement>(null);

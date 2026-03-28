@@ -39,11 +39,12 @@ export default function EventsPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [allEvents, setAllEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
 
-  const categories = ['all', 'technical', 'sports', 'cultural', 'entrepreneurship'];
+  const categories = ['All', 'Technical', 'Sports', 'Cultural', 'Entrepreneurship'];
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -52,22 +53,29 @@ export default function EventsPage() {
         const response = await fetch('/api/admin/events');
         if (response.ok) {
           const data = await response.json();
-          // Format events to match EventCard props
-          const formattedEvents = data.data.map((event: EventData) => ({
+          // Filter to only approved events at fetch time (case-insensitive)
+          const approvedRaw = (data.data || []).filter((ev: EventData) =>
+            (ev.status || '').toString().toLowerCase() === 'approved'
+          );
+
+          // Format events to match EventCard props and include categories array
+          const formattedEvents = approvedRaw.map((event: EventData) => ({
             id: event._id,
             title: event.title,
             date: formatDateRange(event.date, event.end_date, 'en-GB'),
             time: `${event.start_time} - ${event.end_time}`,
             location: event.location || 'TBD',
             image: event.poster_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-            status: event.status.toLowerCase() as 'pending' | 'approved' | 'cancelled',
+            status: 'approved',
             attendees: event.registrations || 0,
             maxAttendees: event.max_participants,
             clubName: event.club_name,
             clubLogo: event.club_logo,
             brandColor: event.club_brand_color || '#8B1E26',
-            category: event.event_type,
+            categories: (event as any).categories || [],
           }));
+
+          // Store only approved events
           setAllEvents(formattedEvents);
         }
       } catch (error) {
@@ -79,21 +87,28 @@ export default function EventsPage() {
     };
 
     fetchEvents();
+
+    // Notifications removed — no fetch for unread count
   }, []);
 
-  const filteredEvents = allEvents.filter((event) => {
-    const matchesSearch =
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-    const isApproved = event.status === 'approved';
-    return matchesSearch && matchesCategory && isApproved;
-  });
+  // Derived display list based on selected category.
+  const eventsToDisplay = (() => {
+    const selected = (selectedCategory || '').toString();
+    const isAllSelected = selected.trim() === '' || selected.toLowerCase() === 'all';
 
+    if (isAllSelected) return allEvents;
+
+    // categories is an array on the Event model
+    return allEvents.filter((event) => {
+      const evCats: string[] = (event.categories || []).map((c: string) => c.toString().toLowerCase());
+      return evCats.includes(selected.toLowerCase());
+    });
+  })();
+
+  // Animation variants: avoid animating opacity to prevent cards getting stuck invisible
   const container = {
-    hidden: { opacity: 0 },
+    hidden: { /* no opacity change */ },
     show: {
-      opacity: 1,
       transition: {
         staggerChildren: 0.1,
       },
@@ -101,8 +116,8 @@ export default function EventsPage() {
   };
 
   const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 },
+    hidden: { y: 20 },
+    show: { y: 0 },
   };
 
   return (
@@ -181,7 +196,7 @@ export default function EventsPage() {
               transition={{ delay: 0.2 }}
               className="text-[#666666] mb-6"
             >
-              Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
+              Showing {eventsToDisplay.length} event{eventsToDisplay.length !== 1 ? 's' : ''}
             </motion.p>
           )}
 
@@ -193,26 +208,29 @@ export default function EventsPage() {
               animate="show"
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              {filteredEvents.map((event) => (
+              {eventsToDisplay.map((event) => (
                 <motion.div key={event.id} variants={item}>
-                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
+                  <EventCard
+                    {...event}
+                    onClick={() => router.push(`/event/${event.id}`)}
+                  />
                 </motion.div>
               ))}
             </motion.div>
           )}
 
-          {!isLoading && filteredEvents.length === 0 && (
+          {!isLoading && eventsToDisplay.length === 0 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-center py-12"
             >
-              <p className="text-[#666666] text-lg">No events found matching your search.</p>
+              <p className="text-[#666666] text-lg">No events found.</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedCategory('all');
+                  setSelectedCategory('All');
                 }}
                 className="mt-4 text-[#8B1E26] hover:underline font-bold"
               >

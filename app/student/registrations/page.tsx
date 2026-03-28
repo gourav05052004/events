@@ -17,18 +17,7 @@ const sidebarItems = [
   { label: 'My Profile', href: '/student/profile' },
 ];
 
-interface EventData {
-  _id: string;
-  title: string;
-  date: string;
-  end_date?: string;
-  start_time: string;
-  end_time: string;
-  location: string;
-  poster_url?: string;
-  registrations: number;
-  max_participants: number;
-}
+// EventData type removed — not used in this file
 
 interface RegistrationItem {
   id: string;

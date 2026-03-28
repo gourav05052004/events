@@ -21,6 +21,7 @@ export interface IEvent extends Document {
   max_participants: number;
   min_team_members?: number;
   max_team_members?: number;
+  categories?: string[];
   registration_deadline: Date;
   status: EventStatus;
   created_at: Date;
@@ -44,6 +45,7 @@ const eventSchema = new Schema<IEvent>(
     max_participants: { type: Number, required: true },
     min_team_members: { type: Number, default: null },
     max_team_members: { type: Number, default: null },
+      categories: { type: [String], default: [] },
     registration_deadline: { type: Date, required: true },
     status: { type: String, enum: ['PENDING', 'APPROVED', 'RESCHEDULED', 'CANCELLED'], default: 'PENDING' },
     created_at: { type: Date, default: Date.now },

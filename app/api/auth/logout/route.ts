@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
  * GET /api/auth/logout
  * Alternative logout endpoint
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json(
     {
       message: 'Use POST to logout',

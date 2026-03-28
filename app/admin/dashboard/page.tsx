@@ -49,7 +49,7 @@ interface DashboardStats {
 export default function AdminDashboard() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<PendingEvent | null>(null);
+  const [selectedEvent] = useState<PendingEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventAction, setEventAction] = useState<'approve' | 'reject' | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState<PendingEvent[]>([]);
@@ -60,7 +60,8 @@ export default function AdminDashboard() {
     pendingEventsCount: 0,
     eventsByStatus: { approved: 0, pending: 0, rejected: 0 },
   });
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [, setIsLoading] = useState(true);
 
   // Fetch dashboard data from APIs
   useEffect(() => {
@@ -129,12 +130,6 @@ export default function AdminDashboard() {
 
     fetchDashboardData();
   }, []);
-
-  const handleEventAction = (event: PendingEvent, action: 'approve' | 'reject') => {
-    setSelectedEvent(event);
-    setEventAction(action);
-    setShowEventModal(true);
-  };
 
   const container = {
     hidden: { opacity: 0 },

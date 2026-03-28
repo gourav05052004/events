@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     const startTime = String(formData.get('startTime') || '').trim();
     const endTime = String(formData.get('endTime') || '').trim();
     const registrationDeadline = String(formData.get('registrationDeadline') || '').trim();
+    const categoriesRaw = String(formData.get('categories') || '').trim();
     const venueType = String(formData.get('venueType') || '').trim();
     const minParticipants = Number(formData.get('minParticipants') || 1);
     const maxParticipants = Number(formData.get('maxParticipants') || 0);
@@ -113,6 +114,7 @@ export async function POST(request: Request) {
       max_participants: maxParticipants,
       min_team_members: eventType.toUpperCase() === 'TEAM' ? minTeamMembers : undefined,
       max_team_members: eventType.toUpperCase() === 'TEAM' ? maxTeamMembers : undefined,
+      categories: categoriesRaw ? JSON.parse(categoriesRaw) : [],
       registration_deadline: new Date(registrationDeadline),
       status: 'PENDING' as const,
     };

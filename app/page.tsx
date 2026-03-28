@@ -185,7 +185,7 @@ export default function Home() {
           <EventCarousel
             title="Upcoming Events"
             events={upcomingEvents}
-            onEventClick={(eventId) => router.push(`/event/${eventId}`)}
+            onEventClick={(eventId: string) => router.push(`/event/${eventId}`)}    
             fullBleed={true}
           />
         ) : (

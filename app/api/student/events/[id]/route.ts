@@ -83,6 +83,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const objectStudentId = new ObjectId(studentId);
 
     // Find and delete the registration
+    // Check event registration deadline before allowing cancellation
+    const event = await Event.findById(eventId);
+    if (event && event.registration_deadline) {
+      const dl = new Date(event.registration_deadline);
+      if (!isNaN(dl.getTime()) && new Date() > dl) {
+        return NextResponse.json(
+          { error: 'Cancellation period has ended' },
+          { status: 400 }
+        );
+      }
+    }
+    
     // Try both ObjectId and string formats in case of data inconsistency
     const registration = await EventRegistration.findOneAndDelete({
       event_id: eventId,
