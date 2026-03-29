@@ -488,18 +488,20 @@ export default function ClubTeamPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-[#2D2D2D] mb-2">
-                  Office Location
-                </label>
-                <input
-                  type="text"
-                  value={editForm.office}
-                  onChange={(e) => setEditForm({ ...editForm, office: e.target.value })}
-                  className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent outline-none"
-                  placeholder="Enter office location"
-                />
-              </div>
+              {editingMember === 'faculty' && (
+                <div>
+                  <label className="block text-sm font-semibold text-[#2D2D2D] mb-2">
+                    Office Location
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.office}
+                    onChange={(e) => setEditForm({ ...editForm, office: e.target.value })}
+                    className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent outline-none"
+                    placeholder="Enter office location"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t border-[#E8E8E8] flex gap-3 justify-end">

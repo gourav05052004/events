@@ -15,6 +15,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const sidebarItems = [
@@ -49,6 +51,10 @@ export default function ClubSettingsPage() {
     newPassword: '',
     confirmPassword: '',
   });
+
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   const resolveClubId = async () => {
     const storedClubId = window.localStorage.getItem('clubId');
@@ -123,7 +129,9 @@ export default function ClubSettingsPage() {
           body: JSON.stringify({
             clubId,
             type: 'profile',
-            ...profileSettings,
+            facultyCoordinator: profileSettings.facultyCoordinator,
+            department: profileSettings.department,
+            description: profileSettings.description,
           }),
         });
 
@@ -135,53 +143,6 @@ export default function ClubSettingsPage() {
         setProfileSettings(result.data);
         setSaveStatus('success');
         toast.success('Profile updated successfully');
-      }
-      // Save security settings (password)
-      else if (activeTab === 'security') {
-        if (!securitySettings.currentPassword || !securitySettings.newPassword) {
-          setSaveStatus('error');
-          toast.error('Please fill in all password fields');
-          setTimeout(() => setSaveStatus('idle'), 2500);
-          return;
-        }
-
-        if (securitySettings.newPassword !== securitySettings.confirmPassword) {
-          setSaveStatus('error');
-          toast.error('New passwords do not match');
-          setTimeout(() => setSaveStatus('idle'), 2500);
-          return;
-        }
-
-        if (securitySettings.newPassword.length < 6) {
-          setSaveStatus('error');
-          toast.error('Password must be at least 6 characters');
-          setTimeout(() => setSaveStatus('idle'), 2500);
-          return;
-        }
-
-        const response = await fetch('/api/club/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            clubId,
-            type: 'password',
-            currentPassword: securitySettings.currentPassword,
-            newPassword: securitySettings.newPassword,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to update password');
-        }
-
-        setSaveStatus('success');
-        toast.success('Password updated successfully');
-        setSecuritySettings({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: '',
-        });
       }
 
       setTimeout(() => setSaveStatus('idle'), 2500);
@@ -329,21 +290,21 @@ export default function ClubSettingsPage() {
                 <motion.div variants={item}>
                   <h3 className="text-lg font-semibold text-[#2D2D2D] mb-4">Club Information</h3>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <InputField
-                      label="Club Name"
-                      value={profileSettings.clubName}
-                      onChange={(e) =>
-                        setProfileSettings({ ...profileSettings, clubName: e.target.value })
-                      }
-                    />
-                    <InputField
-                      label="Club Email"
-                      type="email"
-                      value={profileSettings.email}
-                      onChange={(e) =>
-                        setProfileSettings({ ...profileSettings, email: e.target.value })
-                      }
-                    />
+                      <div>
+                        <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Club Name</label>
+                        <div className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-not-allowed select-none">
+                          {profileSettings.clubName}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Contact admin to change this</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Club Email</label>
+                        <div className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-not-allowed select-none">
+                          {profileSettings.email}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Contact admin to change this</p>
+                      </div>
                     <InputField
                       label="Faculty Coordinator"
                       value={profileSettings.facultyCoordinator}
@@ -379,31 +340,132 @@ export default function ClubSettingsPage() {
                 <motion.div variants={item}>
                   <h3 className="text-lg font-semibold text-[#2D2D2D] mb-4">Password Management</h3>
                   <div className="grid md:grid-cols-2 gap-6">
-                    <InputField
-                      label="Current Password"
-                      type="password"
-                      value={securitySettings.currentPassword}
-                      onChange={(e) =>
-                        setSecuritySettings({ ...securitySettings, currentPassword: e.target.value })
-                      }
-                    />
-                    <InputField
-                      label="New Password"
-                      type="password"
-                      value={securitySettings.newPassword}
-                      onChange={(e) =>
-                        setSecuritySettings({ ...securitySettings, newPassword: e.target.value })
-                      }
-                    />
-                    <InputField
-                      label="Confirm New Password"
-                      type="password"
-                      value={securitySettings.confirmPassword}
-                      onChange={(e) =>
-                        setSecuritySettings({ ...securitySettings, confirmPassword: e.target.value })
-                      }
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Current Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.current ? 'text' : 'password'}
+                            value={passwordForm.currentPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                            className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg focus:ring-2 focus:ring-[#8B1E26] outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                          >
+                            {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#2D2D2D] mb-2">New Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.new ? 'text' : 'password'}
+                            value={passwordForm.newPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                            className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg focus:ring-2 focus:ring-[#8B1E26] outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                          >
+                            {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Must be at least 8 characters</p>
+                        <div className="mt-2">
+                          {/* Password strength indicator */}
+                          <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-2 rounded-full transition-all`} 
+                              style={{ width: `${Math.min(100, (passwordForm.newPassword.length / 12) * 100)}%`, background: passwordForm.newPassword.length >= 8 ? (/[0-9]/.test(passwordForm.newPassword) && /[^A-Za-z0-9]/.test(passwordForm.newPassword) ? '#10B981' : /[0-9]/.test(passwordForm.newPassword) ? '#FB923C' : '#F59E0B') : '#F43F5E' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Confirm New Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showPasswords.confirm ? 'text' : 'password'}
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                            className="w-full px-4 py-2 border border-[#E8E8E8] rounded-lg focus:ring-2 focus:ring-[#8B1E26] outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                          >
+                            {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // frontend validation
+                          if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+                            toast.error('All fields are required');
+                            return;
+                          }
+                          if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+                            toast.error('New passwords do not match');
+                            return;
+                          }
+                          if (passwordForm.newPassword.length < 8) {
+                            toast.error('Password must be at least 8 characters');
+                            return;
+                          }
+                          if (passwordForm.newPassword === passwordForm.currentPassword) {
+                            toast.error('New password must be different from current password');
+                            return;
+                          }
+
+                          setPasswordLoading(true);
+                          try {
+                            const token = window.localStorage.getItem('token') || window.localStorage.getItem('club_token') || '';
+                            const headers: any = { 'Content-Type': 'application/json' };
+                            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                            const res = await fetch('/api/club/settings/change-password', {
+                              method: 'POST',
+                              headers,
+                              body: JSON.stringify({
+                                currentPassword: passwordForm.currentPassword,
+                                newPassword: passwordForm.newPassword,
+                                confirmPassword: passwordForm.confirmPassword,
+                              }),
+                            });
+
+                            const data = await res.json();
+                            if (res.ok) {
+                              toast.success(data.message || 'Password updated successfully!');
+                              setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                            } else {
+                              toast.error(data.error || 'Failed to update password');
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            toast.error('Something went wrong');
+                          } finally {
+                            setPasswordLoading(false);
+                          }
+                        }}
+                        disabled={passwordLoading}
+                        className="px-6 py-2 bg-[#8B1E26] text-white rounded-lg hover:bg-[#6B1520] disabled:opacity-50"
+                      >
+                        {passwordLoading ? 'Updating...' : 'Update Password'}
+                      </button>
+                    </div>
                 </motion.div>
               </motion.div>
             )}

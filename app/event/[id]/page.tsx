@@ -45,6 +45,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [registrationStep, setRegistrationStep] = useState(1);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
@@ -56,10 +57,37 @@ export default function EventDetailPage() {
     // Check if user is logged in
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
+    // Derive role from token if present (localStorage or cookies)
+    const getCookie = (name: string) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    };
+
+    const rawToken = token || getCookie('token') || getCookie('club_token') || getCookie('admin_token');
+    if (rawToken) {
+      try {
+        const parts = rawToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const r = (payload.role || payload?.role || payload?.role_name || '').toString().toLowerCase();
+          if (r === 'club' || r === 'student' || r === 'admin') setRole(r);
+          else setRole(null);
+        }
+      } catch (err) {
+        console.warn('Failed to decode token role', err);
+        setRole(null);
+      }
+    } else {
+      setRole(null);
+    }
     
     fetchEventDetails();
-    if (token) {
-      checkRegistrationStatus();
+    // Only check student registration status when token belongs to a student
+    if (token && (localStorage.getItem('token') || role === 'student')) {
+      // If role is already decoded and is student, check; otherwise attempt checkRegistrationStatus which will safely handle non-students
+      if (role === 'student' || !role) {
+        checkRegistrationStatus();
+      }
     }
   }, [eventId]);
 
@@ -117,6 +145,8 @@ export default function EventDetailPage() {
       setLoading(false);
     }
   };
+
+  // Render collaborating clubs if present (admin API populates collaboratingClubs)
 
   const handleRegister = async () => {
     // Check if user is logged in before allowing registration
@@ -433,6 +463,11 @@ export default function EventDetailPage() {
                 <div className="flex items-start justify-between gap-4 mb-4">
                 <h1 className="text-4xl font-bold text-[#2D2D2D] flex-1">{event.title}</h1>
                 </div>
+              { (event as any).collaboratingClubs && (event as any).collaboratingClubs.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-500 mt-1">In collaboration with: {(event as any).collaboratingClubs.map((c: any) => c.name).join(', ')}</p>
+                </div>
+              )}
               <p className="text-[#666666]">Organized by {event.club_name}</p>
             </div>
 
@@ -530,11 +565,15 @@ export default function EventDetailPage() {
             className="lg:col-span-1"
           >
             <div className="bg-white rounded-xl p-6 border border-[#E8E8E8] sticky top-24">
-              {isLoggedIn && (
+              {role && (
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => router.push('/student/dashboard')}
+                  onClick={() => {
+                    if (role === 'club') router.push('/club/dashboard');
+                    else if (role === 'admin') router.push('/admin/dashboard');
+                    else if (role === 'student') router.push('/student/dashboard');
+                  }}
                   className="w-full mb-4 px-4 py-2 bg-[#F8F9FA] text-[#2D2D2D] rounded-lg font-medium hover:bg-[#E8E8E8] transition-all flex items-center justify-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -601,23 +640,50 @@ export default function EventDetailPage() {
                             {event.max_participants - event.registrations} seats available
                           </p>
                           
-                          {!isLoggedIn && (
-                            <div className="bg-[#FFFBEA] border border-[#F59E0B] rounded-lg p-3 mb-4">
-                              <p className="text-sm text-[#92400E] text-center">
-                                Please login to register for this event
-                              </p>
+                          {/* Render registration controls based on decoded role */}
+                          {(!role || role === null) && (
+                            <>
+                              <div className="bg-[#FFFBEA] border border-[#F59E0B] rounded-lg p-3 mb-4">
+                                <p className="text-sm text-[#92400E] text-center">
+                                  Please login to register for this event
+                                </p>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => router.push('/student/login')}
+                                disabled={isSubmitting || isPastDeadline}
+                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
+                              >
+                                {isPastDeadline ? 'Registration Closed' : 'Login to Register'}
+                              </motion.button>
+                            </>
+                          )}
+
+                          {role === 'student' && (
+                            <>
+                              <p className="text-[#666666] text-sm mb-6">{event.max_participants - event.registrations} seats available</p>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={handleRegister}
+                                disabled={isSubmitting || isPastDeadline}
+                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
+                              >
+                                {isPastDeadline ? 'Registration Closed' : (isSubmitting ? 'Processing...' : 'Register Now')}
+                              </motion.button>
+                            </>
+                          )}
+
+                          {(role === 'club' || role === 'admin') && (
+                            <div className="text-center py-6">
+                              <div className="bg-white border border-[#E8E8E8] rounded-lg p-4 mb-4 text-left">
+                                <p className="text-sm text-[#666666]">👥 Capacity</p>
+                                <p className="font-bold text-[#2D2D2D]">{event.registrations} / {event.max_participants} seats filled</p>
+                                <p className="text-sm text-[#666666] mt-3">ℹ️ Registration is only available for students</p>
+                              </div>
                             </div>
                           )}
-                          
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={handleRegister}
-                            disabled={isSubmitting || isPastDeadline}
-                            className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
-                          >
-                            {isPastDeadline ? 'Registration Closed' : (isSubmitting ? 'Processing...' : (isLoggedIn ? 'Register Now' : 'Login to Register'))}
-                          </motion.button>
                         </motion.div>
                       )}
 

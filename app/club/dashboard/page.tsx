@@ -34,10 +34,12 @@ interface EventTableRow {
   id: string;
   title: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   time: string;
   location: string;
   image: string;
-  status: 'pending' | 'approved' | 'cancelled';
+  status: 'pending' | 'approved' | 'cancelled' | 'rejected';
   attendees: number;
   maxAttendees: number;
   category: string;
@@ -197,6 +199,17 @@ export default function ClubDashboard() {
 
   // Get recent events (latest 2)
   const recentEvents = events.slice(0, 2);
+
+  // Helper to format plain date string to readable date (e.g., 31 Mar 2026)
+  const formatSimpleDate = (isoDate?: string) => {
+    try {
+      if (!isoDate) return '';
+      const d = new Date(isoDate);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return isoDate || '';
+    }
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -424,7 +437,7 @@ export default function ClubDashboard() {
                     transition={{ delay: index * 0.1 }}
                     viewport={{ once: true }}
                   >
-                    <EventCard {...event} onClick={() => setSelectedEvent(event)} />
+                    <EventCard {...{ ...event, status: event.status === 'rejected' ? 'cancelled' : event.status }} onClick={() => setSelectedEvent(event)} />
                   </motion.div>
                 ))}
               </div>
@@ -473,7 +486,7 @@ export default function ClubDashboard() {
                           className="border-b border-[#E8E8E8]"
                         >
                           <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
-                          <td className="px-6 py-4 text-[#666666]">{event.date}</td>
+                            <td className="px-6 py-4 text-[#666666]">{formatSimpleDate(event.startDate)}</td>
                           <td className="px-6 py-4">
                             {event.status === 'approved' && (
                               <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
@@ -490,39 +503,93 @@ export default function ClubDashboard() {
                                 Cancelled
                               </span>
                             )}
+                              {event.status === 'rejected' && (
+                                <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                                  Rejected
+                                </span>
+                              )}
                           </td>
-                          <td className="px-6 py-4 text-[#2D2D2D]">
-                            {event.attendees}/{event.maxAttendees}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex gap-2">
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={() => {
-                                  setSelectedEvent(event);
-                                  setShowEventModal(true);
-                                }}
-                                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                              >
-                                <Eye size={18} />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors"
-                              >
-                                <Edit size={18} />
-                              </motion.button>
-                              <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                              >
-                                <Trash2 size={18} />
-                              </motion.button>
-                            </div>
-                          </td>
+                            <td className="px-6 py-4 text-[#2D2D2D]">
+                              {event.attendees}/{event.maxAttendees}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex gap-2">
+                                {/* View */}
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => router.push(`/club/events/${event.id}`)}
+                                  className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
+                                  title="View event"
+                                >
+                                  <Eye size={18} />
+                                </motion.button>
+
+                                {/* Edit - only allowed when Pending */}
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => {
+                                    if (!(event as any).isOwner || event.status !== 'pending') return;
+                                    router.push(`/club/events/${event.id}/edit`);
+                                  }}
+                                  className={`p-2 rounded-lg transition-colors ${
+                                    !(event as any).isOwner || event.status !== 'pending'
+                                      ? 'opacity-40 cursor-not-allowed text-gray-400'
+                                      : 'hover:bg-purple-50 text-purple-600'
+                                  }`}
+                                  title={!((event as any).isOwner) ? 'Only the event creator can edit this event' : (event.status !== 'pending' ? 'Only pending events can be edited' : 'Edit event')}
+                                >
+                                  <Edit size={18} />
+                                </motion.button>
+
+                                {/* Delete - restricted by status */}
+                                {(!(event as any).isOwner) ? (
+                                  <button
+                                    className="p-2 opacity-40 cursor-not-allowed text-gray-400 rounded-lg"
+                                    title="Only the event creator can delete this event"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                ) : event.status === 'approved' ? (
+                                  <button
+                                    className="p-2 opacity-40 cursor-not-allowed text-gray-400 rounded-lg"
+                                    title="Approved events cannot be deleted"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={async () => {
+                                      const confirmed = window.confirm(
+                                        `Are you sure you want to delete ${event.title}? This action cannot be undone.`
+                                      );
+                                      if (!confirmed) return;
+
+                                      try {
+                                        const res = await fetch(`/api/club/events/${event.id}`, {
+                                          method: 'DELETE',
+                                        });
+                                        const json = await res.json();
+                                        if (!res.ok) {
+                                          toast.error(json?.error || 'Failed to delete event');
+                                          return;
+                                        }
+                                        setEvents((prev) => prev.filter((e) => e.id !== event.id));
+                                        toast.success('Event deleted successfully');
+                                      } catch (err) {
+                                        console.error('Delete error', err);
+                                        toast.error('Failed to delete event');
+                                      }
+                                    }}
+                                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
+                                    title="Delete event"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
                         </motion.tr>
                       ))
                     )}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
+import { getClubToken, getClubId, handleClubUnauthorized } from '@/lib/club-auth';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
@@ -42,6 +43,8 @@ interface ClubEvent {
   attendees: number;
   maxAttendees: number;
   category: string;
+  isOwner?: boolean;
+  collaboratingClubs?: Array<{ id: string; name: string }>;
 }
 
 type ViewMode = 'grid' | 'table';
@@ -57,11 +60,10 @@ export default function ClubEventsPage() {
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+
   const resolveClubId = async () => {
     const storedClubId = window.localStorage.getItem('clubId');
-    if (storedClubId) {
-      return storedClubId;
-    }
+    if (storedClubId) return storedClubId;
 
     try {
       const response = await fetch('/api/club/me');
@@ -82,38 +84,41 @@ export default function ClubEventsPage() {
     return null;
   };
 
+  const sessionExpiredRef = useRef(false);
+
   useEffect(() => {
     const fetchEvents = async () => {
-      const clubId = await resolveClubId();
-      console.log('Fetching events for clubId:', clubId);
-      
-      if (!clubId) {
-        console.warn('No clubId found in localStorage');
-        setIsLoading(false);
-        toast.error('Session expired. Please login again.');
-        router.push('/login?role=club');
-        return;
-      }
-
       try {
-        const url = `/api/club/events/list?clubId=${clubId}`;
-        console.log('Fetching from:', url);
-        const response = await fetch(url);
-        console.log('Response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Events received:', data.events?.length || 0, data.events);
-          setClubEvents(data.events || []);
-          toast.success(`Loaded ${data.events?.length || 0} events`);
-        } else {
-          const error = await response.json();
-          console.error('Failed to fetch events:', error);
-          toast.error('Failed to load events');
+        setIsLoading(true);
+
+        // Prefer clubId-based fetch since club login stores clubId (no token)
+        const clubId = (await resolveClubId()) || getClubId();
+
+        if (!clubId) {
+          // if user was never logged in, silently redirect to club login
+          setIsLoading(false);
+          router.push('/club/login');
+          return;
         }
-      } catch (error) {
-        console.error('Failed to fetch events:', error);
-        toast.error('Error loading events');
+
+        const res = await fetch(`/api/club/events/list?clubId=${clubId}`);
+
+        if (res.status === 401) {
+          handleClubUnauthorized(router, sessionExpiredRef);
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.ok) {
+          setClubEvents(data.events || []);
+        } else {
+          console.error('Failed to load events:', data);
+          toast.error(data.error || 'Failed to load events');
+        }
+      } catch (err) {
+        console.error('Failed to load events:', err);
+        toast.error('Failed to load events');
       } finally {
         setIsLoading(false);
       }
@@ -133,6 +138,10 @@ export default function ClubEventsPage() {
     });
   }, [clubEvents, searchQuery, statusFilter]);
 
+  // Permission helpers (require ownership)
+  const canEdit = (status: string, isOwner?: boolean) => Boolean(isOwner) && status?.toString().toLowerCase() === 'pending';
+  const canDelete = (status: string, isOwner?: boolean) => Boolean(isOwner) && status?.toString().toLowerCase() !== 'approved';
+
   const totalRegistrations = clubEvents.reduce((sum, event) => sum + event.attendees, 0);
   const totalCapacity = clubEvents.reduce((sum, event) => sum + event.maxAttendees, 0);
   const avgFillRate = totalCapacity === 0 ? 0 : Math.round((totalRegistrations / totalCapacity) * 100);
@@ -149,6 +158,11 @@ export default function ClubEventsPage() {
       const response = await fetch(`/api/club/events/${eventId}`, {
         method: 'DELETE',
       });
+
+      if (response.status === 401) {
+        handleClubUnauthorized(router, sessionExpiredRef);
+        return;
+      }
 
       if (response.ok) {
         setClubEvents(clubEvents.filter((e) => e.id !== eventId));
@@ -416,21 +430,45 @@ export default function ClubEventsPage() {
                             >
                               <Eye size={16} />
                             </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors"
-                            >
-                              <Pencil size={16} />
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleDeleteEvent(event.id)}
-                              className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
-                            >
-                              <Trash2 size={16} />
-                            </motion.button>
+                            {/* Edit button - only active for pending events */}
+                            {canEdit(event.status, (event as any).isOwner) ? (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => router.push(`/club/events/${event.id}/edit`)}
+                                className="p-2 hover:bg-purple-50 text-purple-600 rounded-lg transition-colors cursor-pointer"
+                                title="Edit event"
+                              >
+                                <Pencil size={16} />
+                              </motion.button>
+                            ) : (
+                              <div
+                                className="p-2 opacity-30 cursor-not-allowed text-gray-400 rounded-lg"
+                                title={!event.isOwner ? 'Only the event creator can edit this event' : 'Only pending events can be edited'}
+                              >
+                                <Pencil size={16} />
+                              </div>
+                            )}
+
+                            {/* Delete button - disabled for approved events */}
+                            {canDelete(event.status, (event as any).isOwner) ? (
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleDeleteEvent(event.id)}
+                                className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors cursor-pointer"
+                                title="Delete event"
+                              >
+                                <Trash2 size={16} />
+                              </motion.button>
+                            ) : (
+                              <div
+                                className="p-2 opacity-30 cursor-not-allowed text-gray-400 rounded-lg"
+                                title={!event.isOwner ? 'Only the event creator can delete this event' : 'Approved events cannot be deleted'}
+                              >
+                                <Trash2 size={16} />
+                              </div>
+                            )}
                           </div>
                         </td>
                       </motion.tr>
@@ -483,8 +521,23 @@ export default function ClubEventsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/event/${selectedEvent.id}`)}
-                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold"
+                onClick={() => {
+                  if (selectedEvent.status !== 'approved') return;
+                  const url = `/event/${selectedEvent.id}`;
+                  window.open(url, '_blank');
+                  setShowEventModal(false);
+                }}
+                disabled={selectedEvent.status !== 'approved'}
+                title={
+                  selectedEvent.status !== 'approved'
+                    ? 'Event must be approved to view public page'
+                    : 'Open public event page in a new tab'
+                }
+                className={`flex items-center gap-2 px-5 py-3 rounded-lg font-bold transition-colors ${
+                  selectedEvent.status === 'approved'
+                    ? 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                }`}
               >
                 <Eye size={18} />
                 Open Public Page
@@ -492,8 +545,22 @@ export default function ClubEventsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/club/create-event')}
-                className="flex items-center gap-2 px-5 py-3 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-bold"
+                onClick={() => {
+                  if (selectedEvent.status !== 'pending') return;
+                  setShowEventModal(false);
+                  router.push(`/club/events/${selectedEvent.id}/edit`);
+                }}
+                disabled={selectedEvent.status !== 'pending'}
+                title={
+                  selectedEvent.status !== 'pending'
+                    ? 'Only pending events can be edited'
+                    : 'Edit this event'
+                }
+                className={`flex items-center gap-2 px-5 py-3 rounded-lg font-bold transition-colors ${
+                  selectedEvent.status === 'pending'
+                    ? 'border-2 border-[#8B1E26] text-[#8B1E26] bg-white'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                }`}
               >
                 <Pencil size={18} />
                 Edit Event

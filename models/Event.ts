@@ -25,6 +25,7 @@ export interface IEvent extends Document {
   registration_deadline: Date;
   status: EventStatus;
   created_at: Date;
+  collaborating_clubs?: mongoose.Types.ObjectId[];
 }
 
 const eventSchema = new Schema<IEvent>(
@@ -45,7 +46,8 @@ const eventSchema = new Schema<IEvent>(
     max_participants: { type: Number, required: true },
     min_team_members: { type: Number, default: null },
     max_team_members: { type: Number, default: null },
-      categories: { type: [String], default: [] },
+    categories: { type: [String], default: [] },
+    collaborating_clubs: [{ type: Schema.Types.ObjectId, ref: 'Club', default: [] }],
     registration_deadline: { type: Date, required: true },
     status: { type: String, enum: ['PENDING', 'APPROVED', 'RESCHEDULED', 'CANCELLED'], default: 'PENDING' },
     created_at: { type: Date, default: Date.now },

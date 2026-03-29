@@ -21,6 +21,7 @@ export async function GET() {
       .sort({ date: 1 })
       .limit(10)
       .populate('primary_club_id', 'club_name logo brand_color')
+      .populate('collaborating_clubs', 'club_name')
       .lean();
 
     // Get registration counts for each event
@@ -44,6 +45,9 @@ export async function GET() {
           clubName: event.primary_club_id?.club_name || 'Unknown Club',
           clubLogo: event.primary_club_id?.logo || undefined,
           brandColor: event.primary_club_id?.brand_color || '#8B1E26',
+          collaboratingClubs: Array.isArray(event.collaborating_clubs)
+            ? event.collaborating_clubs.map((c: any) => ({ id: String(c._id), name: c.club_name }))
+            : [],
         };
       })
     );

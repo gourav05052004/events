@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -43,6 +43,74 @@ export default function CreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  // Date helpers (timezone-safe local date)
+  const getLocalToday = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getLocalToday();
+
+  // Time select state
+  const [startHour, setStartHour] = useState('09');
+  const [startMinute, setStartMinute] = useState('00');
+  const [endHour, setEndHour] = useState('10');
+  const [endMinute, setEndMinute] = useState('00');
+
+  // helper arrays and dynamic availability for end time
+  const hours = Array.from({ length: 24 }).map((_, i) => i.toString().padStart(2, '0'));
+  const minutes = ['00', '15', '30', '45'];
+  const isSameDay = Boolean(formData.startDate && formData.endDate && formData.startDate === formData.endDate);
+
+  const availableEndHours = isSameDay
+    ? hours.filter((h) => parseInt(h) >= parseInt(startHour))
+    : hours;
+
+  const availableEndMinutes = isSameDay && endHour === startHour
+    ? minutes.filter((m) => parseInt(m) > parseInt(startMinute))
+    : minutes;
+
+  // Handlers that auto-fix end time on conflicts when same-day
+  const handleStartHourChange = (hour: string) => {
+    setStartHour(hour);
+
+    if (isSameDay) {
+      const startTotal = parseInt(hour) * 60 + parseInt(startMinute);
+      const endTotal = parseInt(endHour) * 60 + parseInt(endMinute);
+
+      if (endTotal <= startTotal) {
+        const nextHour = Math.min(parseInt(hour) + 1, 23);
+        setEndHour(String(nextHour).padStart(2, '0'));
+        setEndMinute('00');
+      }
+    }
+  };
+
+  const handleStartMinuteChange = (minute: string) => {
+    setStartMinute(minute);
+
+    if (isSameDay) {
+      const startTotal = parseInt(startHour) * 60 + parseInt(minute);
+      const endTotal = parseInt(endHour) * 60 + parseInt(endMinute);
+
+      if (endTotal <= startTotal) {
+        const nextHour = Math.min(parseInt(startHour) + 1, 23);
+        setEndHour(String(nextHour).padStart(2, '0'));
+        setEndMinute('00');
+      }
+    }
+  };
+
+  // Collaborating clubs multi-select
+  const [allClubs, setAllClubs] = useState<Array<any>>([]);
+  const [collaboratingClubs, setCollaboratingClubs] = useState<string[]>([]);
+  const [clubsOpen, setClubsOpen] = useState(false);
+  const [clubSearch, setClubSearch] = useState('');
+  const clubsRef = useRef<HTMLDivElement | null>(null);
 
   const isTeamEvent = formData.eventType === 'TEAM';
 
@@ -93,6 +161,29 @@ export default function CreateEventPage() {
     }
   }, []);
 
+  // Fetch clubs for collaborating clubs multi-select
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const token = window.localStorage.getItem('token') || window.localStorage.getItem('club_token') || '';
+        const headers: any = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/admin/clubs', { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+        const clubs = Array.isArray(data?.data) ? data.data : [];
+        const current = window.localStorage.getItem('clubId') || '';
+        const filtered = clubs.filter((c: any) => String(c._id) !== String(current));
+        setAllClubs(filtered);
+      } catch (err) {
+        console.warn('Failed to fetch clubs for collaborating list', err);
+      }
+    };
+
+    fetchClubs();
+  }, []);
+
   // Reset team member fields when event type is not team
   useEffect(() => {
     if (!isTeamEvent && (formData.minTeamMembers || formData.maxTeamMembers)) {
@@ -117,18 +208,38 @@ export default function CreateEventPage() {
       return;
     }
 
-    const requiredFields = [
-      formData.title,
-      formData.description,
-      formData.eventType,
-      formData.startDate,
-      formData.endDate,
-      formData.startTime,
-      formData.endTime,
-      formData.registrationDeadline,
-      formData.venueType,
-      formData.maxParticipants,
-    ];
+    // Basic content validation
+    if (!formData.title || formData.title.trim().length < 3) {
+      const errorMsg = 'Title must be at least 3 characters.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.description || formData.description.trim().length < 10) {
+      const errorMsg = 'Description must be at least 10 characters.';
+      setSubmitError(errorMsg);
+      toast.error(errorMsg);
+      setIsSubmitting(false);
+      return;
+    }
+
+      const startTimeStr = `${startHour}:${startMinute}`;
+      const endTimeStr = `${endHour}:${endMinute}`;
+
+      const requiredFields = [
+        formData.title,
+        formData.description,
+        formData.eventType,
+        formData.startDate,
+        formData.endDate,
+        startTimeStr,
+        endTimeStr,
+        formData.registrationDeadline,
+        formData.venueType,
+        formData.maxParticipants,
+      ];
 
     if (requiredFields.some((value) => !value)) {
       const errorMsg = 'Please fill in all required fields.';
@@ -194,6 +305,63 @@ export default function CreateEventPage() {
       }
     }
 
+    // Additional date validations
+    try {
+      const sd = new Date(formData.startDate);
+      const ed = new Date(formData.endDate);
+      const dl = formData.registrationDeadline ? new Date(formData.registrationDeadline) : null;
+      const todayDate = new Date(today + 'T00:00:00');
+
+      if (sd < todayDate) {
+        const errorMsg = 'Start date cannot be in the past';
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (ed < sd) {
+        const errorMsg = 'End date cannot be before start date';
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
+        setIsSubmitting(false);
+        return;
+      }
+
+        if (dl) {
+          if (dl < todayDate) {
+            const errorMsg = 'Registration deadline cannot be in the past';
+            setSubmitError(errorMsg);
+            toast.error(errorMsg);
+            setIsSubmitting(false);
+            return;
+          }
+          if (dl > sd) {
+            const errorMsg = 'Registration deadline cannot be after the event start date';
+            setSubmitError(errorMsg);
+            toast.error(errorMsg);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+    } catch (err) {
+      // ignore date parsing errors here; server will validate as well
+    }
+
+    // If same-day event, ensure end time is after start time
+    if (formData.startDate === formData.endDate) {
+      const startTotal = parseInt(startHour) * 60 + parseInt(startMinute);
+      const endTotal = parseInt(endHour) * 60 + parseInt(endMinute);
+
+      if (endTotal <= startTotal) {
+        const errorMsg = 'End time must be after start time for same-day events';
+        setSubmitError(errorMsg);
+        toast.error(errorMsg);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     const payload = new FormData();
     payload.append('primaryClubId', formData.primaryClubId);
     payload.append('title', formData.title);
@@ -201,8 +369,8 @@ export default function CreateEventPage() {
     payload.append('eventType', formData.eventType);
     payload.append('date', formData.startDate);
     payload.append('endDate', formData.endDate);
-    payload.append('startTime', formData.startTime);
-    payload.append('endTime', formData.endTime);
+    payload.append('startTime', startTimeStr);
+    payload.append('endTime', endTimeStr);
     payload.append('registrationDeadline', formData.registrationDeadline);
     payload.append('venueType', formData.venueType);
     payload.append('maxParticipants', formData.maxParticipants);
@@ -213,7 +381,7 @@ export default function CreateEventPage() {
       payload.append('maxTeamMembers', formData.maxTeamMembers);
     }
     
-    payload.append('collaboratingClubs', formData.collaboratingClubs);
+    payload.append('collaboratingClubs', JSON.stringify(collaboratingClubs || []));
     payload.append('categories', JSON.stringify(formData.categories || []));
     payload.append('poster', posterImage);
 
@@ -330,6 +498,14 @@ export default function CreateEventPage() {
                 />
               </motion.div>
 
+              {isSameDay && (
+                <motion.div variants={item} className="mb-2">
+                  <p className="text-xs text-gray-400">
+                    End time must be after {startHour}:{startMinute} for same-day events.
+                  </p>
+                </motion.div>
+              )}
+
               <motion.div variants={item}>
                 <TextareaField
                   label="Event Description"
@@ -384,63 +560,112 @@ export default function CreateEventPage() {
                   value={formData.startDate}
                   onChange={(e) => handleInputChange('startDate', e.target.value)}
                   required
+                  min={today}
                 />
                 <InputField
                   type="date"
                   label="End Date"
                   value={formData.endDate}
                   onChange={(e) => handleInputChange('endDate', e.target.value)}
-                  min={formData.startDate || undefined}
+                  min={formData.startDate || today}
                   required
                 />
               </motion.div>
 
               <motion.div variants={item} className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#2D2D2D] mb-2">
-                    Start Time <span className="text-[#D32F2F]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B1E26]" size={18} />
-                    <input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => handleInputChange('startTime', e.target.value)}
-                      required
-                      step="300"
-                      disabled={!formData.startDate}
-                      className="w-full pl-10 pr-4 py-3 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA]"
-                    />
+                  <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Start Time <span className="text-[#D32F2F]">*</span></label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-full">
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <div className="relative">
+                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                            <select
+                              value={startHour}
+                              onChange={(e) => handleStartHourChange(e.target.value)}
+                              disabled={!formData.startDate}
+                              className="w-full pl-9 pr-4 py-2 h-10 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:border-[#9B1C1C] transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA] appearance-none"
+                            >
+                              {hours.map((val) => (
+                                <option key={val} value={val}>{val}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">Hour</p>
+                    
+                        </div>
+                        <div className="w-28">
+                          <select
+                            value={startMinute}
+                            onChange={(e) => handleStartMinuteChange(e.target.value)}
+                            disabled={!formData.startDate}
+                            className="w-full px-3 py-2 h-10 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#9B1C1C] transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA] appearance-none"
+                          >
+                            {minutes.map((m) => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-gray-400 mt-1">Minute</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-[#2D2D2D] mb-2">
-                    End Time <span className="text-[#D32F2F]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B1E26]" size={18} />
-                    <input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => handleInputChange('endTime', e.target.value)}
-                      required
-                      step="300"
-                      disabled={!formData.endDate}
-                      className="w-full pl-10 pr-4 py-3 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26] focus:border-transparent transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA]"
-                    />
+                  <label className="block text-sm font-medium text-[#2D2D2D] mb-2">End Time <span className="text-[#D32F2F]">*</span></label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-full">
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <div className="relative">
+                            <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                            <select
+                              value={endHour}
+                              onChange={(e) => setEndHour(e.target.value)}
+                              disabled={!formData.endDate}
+                              className="w-full pl-9 pr-4 py-2 h-10 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:border-[#9B1C1C] transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA] appearance-none"
+                            >
+                              {availableEndHours.map((val) => (
+                                <option key={val} value={val}>{val}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">Hour</p>
+                        </div>
+                        <div className="w-28">
+                          <select
+                            value={endMinute}
+                            onChange={(e) => setEndMinute(e.target.value)}
+                            disabled={!formData.endDate}
+                            className="w-full px-3 py-2 h-10 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#9B1C1C] transition-all disabled:cursor-not-allowed disabled:bg-[#F8F9FA] appearance-none"
+                          >
+                            {availableEndMinutes.map((m) => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-gray-400 mt-1">Minute</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
 
               <motion.div variants={item}>
-                <InputField
-                  type="date"
-                  label="Registration Deadline"
-                  value={formData.registrationDeadline}
-                  onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
-                  max={formData.endDate || undefined}
-                  required
-                />
+                <div>
+                  <InputField
+                    type="date"
+                    label="Registration Deadline"
+                    value={formData.registrationDeadline || ''}
+                    onChange={(e) => handleInputChange('registrationDeadline', e.target.value)}
+                    min={today}
+                    max={formData.startDate || ''}
+                    required
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Deadline can be set up to the event start date</p>
+                </div>
               </motion.div>
 
               <motion.div variants={item} className="grid md:grid-cols-2 gap-6">
@@ -497,12 +722,69 @@ export default function CreateEventPage() {
               )}
 
               <motion.div variants={item}>
-                <InputField
-                  label="Collaborating Clubs (Optional)"
-                  placeholder="Separate multiple clubs with commas"
-                  value={formData.collaboratingClubs}
-                  onChange={(e) => handleInputChange('collaboratingClubs', e.target.value)}
-                />
+                <label className="block text-sm font-medium text-[#2D2D2D] mb-2">Collaborating Clubs (Optional)</label>
+                <div ref={clubsRef} className="relative">
+                  <div
+                    onClick={() => setClubsOpen(true)}
+                    className="w-full border border-[#E8E8E8] rounded-lg p-2 flex items-center gap-2 cursor-pointer"
+                  >
+                    <input
+                      type="text"
+                      placeholder="🔍 Search clubs..."
+                      value={clubSearch}
+                      onChange={(e) => { setClubSearch(e.target.value); setClubsOpen(true); }}
+                      onFocus={() => setClubsOpen(true)}
+                      onBlur={() => setTimeout(() => setClubsOpen(false), 150)}
+                      className="flex-1 outline-none px-2 bg-transparent"
+                    />
+                    <div className="text-sm text-gray-500">▼</div>
+                  </div>
+
+                  {clubsOpen && (
+                    <div className="absolute z-40 mt-2 w-full max-h-48 overflow-y-auto bg-white border border-[#E8E8E8] rounded-lg p-2">
+                      {allClubs.filter(c => c.club_name.toLowerCase().includes(clubSearch.toLowerCase())).length === 0 ? (
+                        <div className="p-3 text-sm text-gray-500">No other clubs found</div>
+                      ) : (
+                        allClubs.filter(c => c.club_name.toLowerCase().includes(clubSearch.toLowerCase())).map((club) => {
+                          const selected = collaboratingClubs.includes(String(club._id));
+                          return (
+                            <div key={club._id} className={`p-2 rounded hover:bg-[#F8F9FA] flex items-center justify-between ${selected ? 'bg-[#F8F8F8]' : ''}`}>
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm font-medium text-[#2D2D2D]">{club.club_name}</div>
+                                <div className="text-xs text-gray-400">{club.email || ''}</div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (selected) setCollaboratingClubs(prev => prev.filter(id => id !== String(club._id)));
+                                  else setCollaboratingClubs(prev => [...prev, String(club._id)]);
+                                  setClubsOpen(false);
+                                }}
+                                className={`px-2 py-1 text-sm rounded ${selected ? 'bg-[#8B1E26] text-white' : 'bg-white text-[#8B1E26] border border-[#E8E8E8]'}`}
+                              >
+                                {selected ? 'Selected' : 'Select'}
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+
+                  {collaboratingClubs.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {collaboratingClubs.map((id) => {
+                        const club = allClubs.find(c => String(c._id) === String(id));
+                        return (
+                          <div key={id} className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-[#FCA5A5] text-[#9B1C1C]">
+                            <span className="text-sm">{club?.club_name || id}</span>
+                            <button type="button" onClick={() => setCollaboratingClubs(prev => prev.filter(x => x !== id))} className="text-gray-500">✕</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </motion.div>
 
               <motion.div variants={item}>

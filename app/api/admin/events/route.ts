@@ -13,6 +13,7 @@ export async function GET() {
     const events = await Event.find()
       .populate('primary_club_id', 'club_name email logo brand_color')
       .populate('allocated_resource_id', 'name resource_type')
+      .populate('collaborating_clubs', 'club_name')
       .sort({ date: -1 })
       .lean();
 
@@ -46,6 +47,9 @@ export async function GET() {
           description: event.description,
           poster_url: event.poster_url || '',
           categories: event.categories || [],
+          collaboratingClubs: Array.isArray(event.collaborating_clubs)
+            ? event.collaborating_clubs.map((c: any) => ({ id: String(c._id), name: c.club_name }))
+            : [],
           created_at: event.created_at,
         };
       })
