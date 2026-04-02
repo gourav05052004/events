@@ -133,7 +133,8 @@ For questions or support, contact the project maintainer or check the guides in 
 - **Club Dashboard**
   - ✅ Exists: [app/club/dashboard/page.tsx](app/club/dashboard/page.tsx)
   - ✅ Event creation ([app/club/create-event/page.tsx](app/club/create-event/page.tsx), [app/api/admin/events/route.ts](app/api/admin/events/route.ts))
-  - ⚠️ Event editing/deletion: Implementation unclear or partial
+  - ⚠️ Event editing: Implementation partial; deletion: client-side improvements applied
+  - ✅ Client-side: `My Events` page fixed (removed problematic `useRef` guard, added single-fire session-expiry guard, and consistent delete handling)
 - **Student Dashboard**
   - ✅ Exists: [app/student/dashboard/page.tsx](app/student/dashboard/page.tsx)
   - ✅ Event registration ([app/api/student/registrations/](app/api/student/registrations/))
@@ -143,6 +144,7 @@ For questions or support, contact the project maintainer or check the guides in 
 - ✅ JWT-based auth ([lib/jwt-utils.ts](lib/jwt-utils.ts), [middleware.ts](middleware.ts))
 - ✅ Separate login/register for admin, club, student ([app/api/auth/](app/api/auth/))
 - ⚠️ Role-based route protection: Present but needs more granular checks
+ - ✅ Club session handling: added shared helper (`lib/club-auth.ts`) and single-fire 401 handler for client pages
 
 ### Event Lifecycle
 - ✅ Clubs can create events ([app/club/create-event/page.tsx](app/club/create-event/page.tsx))
@@ -178,6 +180,7 @@ For questions or support, contact the project maintainer or check the guides in 
 
 ## 3. Bugs, Weak Implementations, Risks
 - 🐞 Inconsistent error handling in API routes (e.g., missing try/catch, unclear error messages)
+ - 🐞 Inconsistent error handling in API routes (e.g., missing try/catch, unclear error messages) — partially addressed on club client pages (consistent 401 handling added), server routes still need review
 - 🐞 Some API endpoints lack authentication/authorization checks (risk of privilege escalation)
 - 🐞 No input validation/sanitization in several routes (risk: injection, bad data)
 - 🐞 Club and event deletion may not cascade properly (orphaned records)

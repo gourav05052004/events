@@ -34,6 +34,15 @@ interface PendingEvent {
   requestedCapacity?: number;
 }
 
+interface APIEvent {
+  _id: string;
+  title?: string;
+  club_name?: string;
+  date?: string | Date;
+  resource_type?: string;
+  max_participants?: number;
+}
+
 interface DashboardStats {
   totalEvents: number;
   totalClubs: number;
@@ -43,6 +52,12 @@ interface DashboardStats {
     approved: number;
     pending: number;
     rejected: number;
+  };
+  venueAllocation?: { name?: string; count: number }[];
+  registrationOverview?: {
+    total: number;
+    avgPerEvent: number;
+    topEvents?: { _id?: string; id?: string; title?: string; count: number }[];
   };
 }
 
@@ -59,64 +74,80 @@ export default function AdminDashboard() {
     totalVenues: 0,
     pendingEventsCount: 0,
     eventsByStatus: { approved: 0, pending: 0, rejected: 0 },
+      registrationOverview: { total: 0, avgPerEvent: 0, topEvents: [] },
   });
+
+  // Academic year selector state
+  const getCurrentAcademicStart = () => {
+    const now = new Date();
+    const month = now.getMonth(); // 0-based, July = 6
+    return month >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  };
+
+  const [selectedYearStart, setSelectedYearStart] = useState<number>(getCurrentAcademicStart());
+
+  const buildYearOptions = (centerStart: number) => {
+    const opts: number[] = [];
+    for (let i = centerStart - 2; i <= centerStart; i++) opts.push(i);
+    return opts;
+  };
+
+  const yearOptions = buildYearOptions(getCurrentAcademicStart());
 
   const [, setIsLoading] = useState(true);
 
   // Fetch dashboard data from APIs
   useEffect(() => {
+    // Polyfill client Performance methods that some environments may not implement.
+    if (typeof window !== 'undefined' && typeof performance !== 'undefined') {
+      const p = performance as unknown as { clearMarks?: Function; clearMeasures?: Function };
+      if (typeof p.clearMarks !== 'function') p.clearMarks = () => {};
+      if (typeof p.clearMeasures !== 'function') p.clearMeasures = () => {};
+    }
+
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch events
-        const eventsRes = await fetch('/api/admin/events');
-        const eventsData = eventsRes.ok ? await eventsRes.json() : { data: [] };
-        const allEvents = eventsData.data || [];
-        
-        // Fetch clubs
-        const clubsRes = await fetch('/api/admin/clubs');
-        const clubsData = clubsRes.ok ? await clubsRes.json() : { data: [] };
-        const allClubs = clubsData.data || [];
-        
-        // Fetch venues
-        const venuesRes = await fetch('/api/admin/venues');
-        const venuesData = venuesRes.ok ? await venuesRes.json() : { data: [] };
-        const allVenues = venuesData.data || [];
+        // Compute ISO date range for selected academic year (Jul 1 -> May 31)
+        const startIso = new Date(`${selectedYearStart}-07-01`).toISOString();
+        const endIso = new Date(`${selectedYearStart + 1}-05-31T23:59:59`).toISOString();
 
-        if (!eventsRes.ok || !clubsRes.ok || !venuesRes.ok) {
-          toast.error('Failed to load some dashboard data');
-        } else {
-          toast.success('Dashboard loaded successfully');
+        const url = `/api/admin/dashboard?yearStart=${encodeURIComponent(startIso)}&yearEnd=${encodeURIComponent(endIso)}`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('Dashboard fetch failed:', res.status, text);
+          toast.error('Failed to load dashboard data');
+          setPendingApprovals([]);
+          return;
         }
 
-        // Count events by status
-        const eventsByStatus = {
-          approved: allEvents.filter((e: any) => e.status === 'APPROVED').length,
-          pending: allEvents.filter((e: any) => e.status === 'PENDING').length,
-          rejected: allEvents.filter((e: any) => e.status === 'REJECTED').length,
-        };
+        const json = await res.json();
+        const stats = json.statistics || {};
 
-        // Get pending events for approvals table
-        const pending = allEvents.filter((e: any) => e.status === 'PENDING').slice(0, 5);
-        const formattedPending = pending.map((event: any) => ({
-          _id: event._id,
-          id: event._id,
-          title: event.title,
-          organizer: event.club_name || 'Unknown',
+        const formattedPending = (stats.pendingEvents || []).map((event: any) => ({
+          _id: event._id?.toString?.() || event._id,
+          id: event._id?.toString?.() || event._id,
+          title: event.title || 'Untitled Event',
+          organizer: event.organizer || 'Unknown',
           date: event.date ? new Date(event.date).toLocaleDateString('en-GB') : 'TBD',
-          status: 'PENDING',
-          venueType: event.resource_type || 'Not Specified',
-          requestedCapacity: event.max_participants || 0,
+          status: 'PENDING' as const,
+          venueType: event.venue || 'Not Specified',
+          requestedCapacity: event.capacity || 0,
         }));
 
         setPendingApprovals(formattedPending);
         setDashboardStats({
-          totalEvents: allEvents.length,
-          totalClubs: allClubs.length,
-          totalVenues: allVenues.length,
-          pendingEventsCount: eventsByStatus.pending,
-          eventsByStatus,
+          totalEvents: stats.totalEvents || 0,
+          totalClubs: stats.totalClubs || 0,
+          totalVenues: stats.totalVenues || 0,
+          pendingEventsCount: stats.eventsByStatus?.pending || 0,
+          eventsByStatus: {
+            approved: stats.eventsByStatus?.approved || 0,
+            pending: stats.eventsByStatus?.pending || 0,
+            rejected: stats.eventsByStatus?.rejected || 0,
+          },
+          registrationOverview: stats.registrationOverview || { total: 0, avgPerEvent: 0, topEvents: [] },
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -129,7 +160,7 @@ export default function AdminDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [selectedYearStart]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -165,6 +196,21 @@ export default function AdminDashboard() {
           >
             <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome, Administrator</h1>
             <p className="text-[#666666]">Manage all events, venues, and oversee campus activities.</p>
+            <div className="flex justify-end mt-4">
+              <label className="sr-only" htmlFor="academicYear">Academic year</label>
+              <select
+                id="academicYear"
+                value={selectedYearStart}
+                onChange={(e) => setSelectedYearStart(Number(e.target.value))}
+                className="bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm text-[#2D2D2D]"
+              >
+                {yearOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {`${s}–${(s + 1).toString().slice(-2)} (Jul ${s} – May ${s + 1})`}
+                  </option>
+                ))}
+              </select>
+            </div>
           </motion.div>
 
           {/* Stats Cards */}
@@ -244,9 +290,10 @@ export default function AdminDashboard() {
                     <tbody>
                       {pendingApprovals.map((event) => (
                         <motion.tr
-                          key={event.id}
+                          key={event._id}
                           whileHover={{ backgroundColor: '#F8F9FA' }}
-                          className="border-b border-[#E8E8E8]"
+                          className="border-b border-[#E8E8E8] cursor-pointer"
+                          onClick={() => router.push(`/admin/events/${event._id}`)}
                         >
                           <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
                           <td className="px-6 py-4 text-[#666666]">{event.organizer}</td>
@@ -297,21 +344,82 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Venue Allocation */}
+            {/* Registration Overview */}
             <div className="bg-white rounded-xl p-6 border border-[#E8E8E8]">
-              <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">Venue Allocation</h3>
+              <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">Registration Overview</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Main Auditorium</span>
-                  <span className="font-bold text-[#8B1E26]">8 events</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Conference Hall</span>
-                  <span className="font-bold text-[#8B1E26]">6 events</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Lab Spaces</span>
-                  <span className="font-bold text-[#8B1E26]">12 events</span>
+                <div className="border-t mt-3 pt-3">
+                  <p className="text-[#666666] mb-2">Top Registered Events:</p>
+                  <div className="space-y-2">
+                    {(dashboardStats.registrationOverview?.topEvents && dashboardStats.registrationOverview.topEvents.length > 0) ? (
+                      dashboardStats.registrationOverview.topEvents.map((e) => {
+                        const eventId = e._id ?? e.id ?? (e as { eventId?: string }).eventId;
+
+                        const handleNavigate = async () => {
+                          console.log('Top registered event clicked:', { id: eventId, title: e.title });
+                          let idToNavigate = eventId;
+                          if (!idToNavigate) {
+                            try {
+                              const res = await fetch('/api/admin/events');
+                              if (res.ok) {
+                                const body = await res.json();
+                                const list = Array.isArray(body) ? body : (body.events || body.items || []);
+                                const found = list.find((it: any) => it && (it._id === e._id || it.id === e.id || it.title === e.title || it.name === e.title));
+                                idToNavigate = found?._id ?? found?.id ?? found?.eventId ?? idToNavigate;
+                              } else {
+                                console.warn('Fallback events lookup failed:', res.status);
+                              }
+                            } catch (err) {
+                              console.error('Error fetching events for lookup', err);
+                            }
+                          }
+
+                          if (idToNavigate) {
+                            router.push(`/admin/events/${String(idToNavigate)}`);
+                          } else {
+                            toast.error('Could not find event to open');
+                          }
+                        };
+
+                        const handleKeyDown = (ev: React.KeyboardEvent) => {
+                          if (ev.key === 'Enter' || ev.key === ' ') {
+                            ev.preventDefault();
+                            void handleNavigate();
+                          }
+                        };
+
+                        return (
+                          <div key={eventId ?? e.title} className="flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => void handleNavigate()}
+                              onKeyDown={handleKeyDown}
+                              aria-label={e.title ? `Open event ${e.title}` : `Open event ${eventId}`}
+                              className={`text-[#666666] ${eventId ? 'cursor-pointer hover:text-red-700 transition-colors duration-150' : ''}`}
+                            >
+                              {e.title}
+                            </button>
+                            <span className="bg-red-100 text-red-700 rounded-full px-2 font-bold">{e.count}</span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#666666]">Samosa Eating Challenge</span>
+                          <span className="bg-red-100 text-red-700 rounded-full px-2 font-bold">18</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#666666]">Tech Fest 2026</span>
+                          <span className="bg-red-100 text-red-700 rounded-full px-2 font-bold">14</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#666666]">Cultural Night</span>
+                          <span className="bg-red-100 text-red-700 rounded-full px-2 font-bold">10</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

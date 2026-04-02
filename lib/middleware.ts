@@ -7,8 +7,19 @@ import { NextRequest, NextResponse } from 'next/server';
  * @returns Decoded token payload or null if invalid
  */
 export function verifyRequestToken(request: NextRequest) {
+  // First, try Authorization header (Bearer)
   const authHeader = request.headers.get('authorization') || undefined;
-  const token = extractTokenFromHeader(authHeader);
+  const headerToken = extractTokenFromHeader(authHeader);
+
+  // Next, try common cookie names set by login endpoints
+  let cookieToken: string | null = null;
+  try {
+    cookieToken = (request.cookies && (request.cookies.get?.('admin_token')?.value || request.cookies.get?.('token')?.value)) || null;
+  } catch {
+    cookieToken = null;
+  }
+
+  const token = headerToken || cookieToken;
 
   if (!token) {
     return null;
