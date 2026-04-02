@@ -9,7 +9,6 @@ import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { formatDateRange } from '@/lib/utils';
 import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock } from 'lucide-react';
-import * as XLSX from 'xlsx';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -238,19 +237,16 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleDownloadExcel = () => {
-    if (!event) return;
-    const rows = event.registrations.map((r) => ({
-      Name: r.student_name,
-      'Roll Number': r.roll_number,
-      Email: r.email,
-      Status: r.status,
-      'Registered On': new Date(r.registered_at).toLocaleDateString(),
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
-    XLSX.writeFile(workbook, `registrations-${eventId}.xlsx`);
+  const handleDownloadExcel = async () => {
+    const response = await fetch(`/api/admin/events/${eventId}?export=xlsx`);
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `registrations-${eventId}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (

@@ -3,6 +3,7 @@ import connectDB from '@/lib/db';
 import { Event, EventRegistration, Resource } from '@/models';
 // Notification system removed: Student/Notification imports not required here
 import { Types } from 'mongoose';
+import ExcelJS from 'exceljs';
 
 /**
  * GET /api/admin/events/[id]
@@ -45,6 +46,35 @@ export async function GET(
     const registrationCount = registrations.length;
     const confirmedCount = registrations.filter((r: any) => r.status === 'CONFIRMED').length;
     const waitlistedCount = registrations.filter((r: any) => r.status === 'WAITLISTED').length;
+
+    // Excel export
+    if (request.nextUrl.searchParams.get('export') === 'xlsx') {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Registrations');
+      worksheet.columns = [
+        { header: 'Name', key: 'name', width: 25 },
+        { header: 'Roll Number', key: 'rollNumber', width: 15 },
+        { header: 'Email', key: 'email', width: 30 },
+        { header: 'Status', key: 'status', width: 15 },
+        { header: 'Registered On', key: 'registeredOn', width: 15 },
+      ];
+      for (const r of registrations as any[]) {
+        worksheet.addRow({
+          name: r.student_id?.name || 'N/A',
+          rollNumber: r.student_id?.roll_number || 'N/A',
+          email: r.student_id?.email || 'N/A',
+          status: r.status,
+          registeredOn: new Date(r.registered_at).toLocaleDateString(),
+        });
+      }
+      const buffer = await workbook.xlsx.writeBuffer();
+      return new Response(buffer as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="registrations-${id}.xlsx"`,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
