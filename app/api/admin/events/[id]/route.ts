@@ -38,7 +38,7 @@ export async function GET(
 
     // Get registrations with student details
     const registrations = await EventRegistration.find({ event_id: id })
-      .populate('student_id', 'student_name email rollNumber')
+      .populate('student_id', 'name email roll_number')
       .sort({ registered_at: -1 })
       .lean();
 
@@ -53,9 +53,9 @@ export async function GET(
         registrations: registrations.map((r: any) => ({
           _id: r._id,
           student_id: r.student_id?._id,
-          student_name: r.student_id?.student_name || 'Unknown',
+          student_name: r.student_id?.name || 'Unknown',
           email: r.student_id?.email || '',
-          roll_number: r.student_id?.rollNumber || '',
+          roll_number: r.student_id?.roll_number || '',
           status: r.status,
           registered_at: r.registered_at,
         })),

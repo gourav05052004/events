@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { formatDateRange } from '@/lib/utils';
-import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock, Download } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -97,6 +97,7 @@ export default function EventDetailsPage() {
   const [editedDescription, setEditedDescription] = useState('');
   const [venues, setVenues] = useState<Venue[]>([]);
   const [selectedVenueId, setSelectedVenueId] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch event details
   useEffect(() => {
@@ -109,6 +110,32 @@ export default function EventDetailsPage() {
       fetchVenues();
     }
   }, [event?.date, event?.start_time, event?.end_time]);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch(`/api/admin/events/${eventId}/export`);
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      a.download = match ? match[1] : 'registrations.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export error:', err);
+      setError('Failed to export registrations');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const fetchEventDetails = async () => {
     try {
@@ -523,9 +550,32 @@ export default function EventDetailsPage() {
                     transition={{ delay: 0.25 }}
                     className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
                   >
-                    <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">
-                      Registrations ({event.registration_summary.total})
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-2xl font-bold text-[#2D2D2D]">
+                        Registrations ({event.registration_summary.total})
+                      </h2>
+                      {event.registrations.length > 0 && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleExport}
+                          disabled={isExporting}
+                          className="flex items-center gap-2 px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1620] transition-colors disabled:opacity-50 text-sm"
+                        >
+                          {isExporting ? (
+                            <>
+                              <Loader size={16} className="animate-spin" />
+                              Exporting…
+                            </>
+                          ) : (
+                            <>
+                              <Download size={16} />
+                              Export to Excel
+                            </>
+                          )}
+                        </motion.button>
+                      )}
+                    </div>
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm text-blue-600 mb-2">Confirmed</p>

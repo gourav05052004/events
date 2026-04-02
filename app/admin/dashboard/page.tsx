@@ -34,6 +34,12 @@ interface PendingEvent {
   requestedCapacity?: number;
 }
 
+interface TopEvent {
+  _id: string;
+  title: string;
+  registrations: number;
+}
+
 interface DashboardStats {
   totalEvents: number;
   totalClubs: number;
@@ -53,6 +59,7 @@ export default function AdminDashboard() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [eventAction, setEventAction] = useState<'approve' | 'reject' | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState<PendingEvent[]>([]);
+  const [topEvents, setTopEvents] = useState<TopEvent[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalEvents: 0,
     totalClubs: 0,
@@ -110,7 +117,18 @@ export default function AdminDashboard() {
           requestedCapacity: event.max_participants || 0,
         }));
 
+        // Compute top 3 events by registration count
+        const sorted = [...allEvents]
+          .sort((a: any, b: any) => (b.registrations || 0) - (a.registrations || 0))
+          .slice(0, 3)
+          .map((e: any) => ({
+            _id: e._id,
+            title: e.title,
+            registrations: e.registrations || 0,
+          }));
+
         setPendingApprovals(formattedPending);
+        setTopEvents(sorted);
         setDashboardStats({
           totalEvents: allEvents.length,
           totalClubs: allClubs.length,
@@ -297,22 +315,28 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Venue Allocation */}
+            {/* Registration Overview */}
             <div className="bg-white rounded-xl p-6 border border-[#E8E8E8]">
-              <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">Venue Allocation</h3>
+              <h3 className="text-xl font-bold text-[#2D2D2D] mb-4">Registration Overview</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Main Auditorium</span>
-                  <span className="font-bold text-[#8B1E26]">8 events</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Conference Hall</span>
-                  <span className="font-bold text-[#8B1E26]">6 events</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#666666]">Lab Spaces</span>
-                  <span className="font-bold text-[#8B1E26]">12 events</span>
-                </div>
+                {topEvents.length > 0 ? (
+                  topEvents.map((ev) => (
+                    <div key={ev._id} className="flex items-center justify-between">
+                      <button
+                        onClick={() => router.push(`/admin/events/${ev._id}`)}
+                        aria-label={`View event details for ${ev.title}`}
+                        className="text-[#666666] hover:text-[#8B1E26] hover:underline text-left truncate max-w-[70%] transition-colors"
+                      >
+                        {ev.title}
+                      </button>
+                      <span className="font-bold text-[#8B1E26] whitespace-nowrap">
+                        {ev.registrations} registered
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[#666666] text-sm">No registrations yet.</p>
+                )}
               </div>
             </div>
           </motion.section>
