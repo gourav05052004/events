@@ -5,6 +5,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import * as XLSX from 'xlsx';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { formatDateRange } from '@/lib/utils';
@@ -19,11 +20,11 @@ const sidebarItems = [
 
 interface Registration {
   _id: string;
-  student_name: string;
+  name: string;
   email: string;
-  roll_number: string;
+  rollNumber: string;
   status: 'CONFIRMED' | 'WAITLISTED';
-  registered_at: string;
+  registeredOn: string;
 }
 
 interface Venue {
@@ -237,16 +238,19 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleDownloadExcel = async () => {
-    const response = await fetch(`/api/admin/events/${eventId}?export=xlsx`);
-    if (!response.ok) return;
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `registrations-${eventId}.xlsx`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadExcel = () => {
+    if (!event) return;
+    const rows = event.registrations.map((registration) => ({
+      Name: registration.name,
+      'Roll Number': registration.rollNumber,
+      Email: registration.email,
+      Status: registration.status,
+      'Registered On': new Date(registration.registeredOn).toLocaleDateString(),
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
+    XLSX.writeFile(workbook, `registrations-${eventId}.xlsx`);
   };
 
   return (
@@ -582,8 +586,8 @@ export default function EventDetailsPage() {
                                 animate={{ opacity: 1 }}
                                 className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
                               >
-                                <td className="px-4 py-3 text-[#2D2D2D] font-medium">{registration.student_name}</td>
-                                <td className="px-4 py-3 text-[#666666]">{registration.roll_number}</td>
+                                <td className="px-4 py-3 text-[#2D2D2D] font-medium">{registration.name}</td>
+                                <td className="px-4 py-3 text-[#666666]">{registration.rollNumber}</td>
                                 <td className="px-4 py-3 text-[#666666] text-xs">{registration.email}</td>
                                 <td className="px-4 py-3">
                                   <span
@@ -597,7 +601,7 @@ export default function EventDetailsPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-[#666666] text-xs">
-                                  {new Date(registration.registered_at).toLocaleDateString('en-GB')}
+                                  {new Date(registration.registeredOn).toLocaleDateString('en-GB')}
                                 </td>
                               </motion.tr>
                             ))}

@@ -5,6 +5,30 @@ import { Event, EventRegistration, Resource } from '@/models';
 import { Types } from 'mongoose';
 import ExcelJS from 'exceljs';
 
+type PopulatedStudent = {
+  _id: Types.ObjectId;
+  name?: string;
+  roll_number?: string;
+  email?: string;
+};
+
+type RegistrationRecord = {
+  _id: Types.ObjectId;
+  student_id?: PopulatedStudent | null;
+  status: 'CONFIRMED' | 'WAITLISTED';
+  registered_at: Date;
+  email?: string;
+};
+
+type EventRecord = Record<string, unknown> & {
+  _id: Types.ObjectId;
+  max_participants: number;
+};
+
+type ResourceRecord = {
+  name: string;
+};
+
 /**
  * GET /api/admin/events/[id]
  * Fetch a specific event with all details and registrations
@@ -28,7 +52,7 @@ export async function GET(
     const event = await Event.findById(id)
       .populate('primary_club_id', 'club_name email faculty_coordinator_name')
       .populate('allocated_resource_id', 'name resource_type location')
-      .lean() as any;
+      .lean<EventRecord>();
 
     if (!event) {
       return NextResponse.json(
@@ -39,13 +63,22 @@ export async function GET(
 
     // Get registrations with student details
     const registrations = await EventRegistration.find({ event_id: id })
-      .populate('student_id', 'name email roll_number')
+      .populate('student_id', 'name roll_number email')
       .sort({ registered_at: -1 })
-      .lean();
+      .lean<RegistrationRecord[]>();
 
     const registrationCount = registrations.length;
-    const confirmedCount = registrations.filter((r: any) => r.status === 'CONFIRMED').length;
-    const waitlistedCount = registrations.filter((r: any) => r.status === 'WAITLISTED').length;
+    const confirmedCount = registrations.filter((r) => r.status === 'CONFIRMED').length;
+    const waitlistedCount = registrations.filter((r) => r.status === 'WAITLISTED').length;
+
+    const mappedRegistrations = registrations.map((registration) => ({
+      _id: registration._id,
+      name: registration.student_id?.name || 'N/A',
+      rollNumber: registration.student_id?.roll_number || 'N/A',
+      email: registration.student_id?.email || registration.email || 'N/A',
+      status: registration.status,
+      registeredOn: registration.registered_at,
+    }));
 
     // Excel export
     if (request.nextUrl.searchParams.get('export') === 'xlsx') {
@@ -58,13 +91,13 @@ export async function GET(
         { header: 'Status', key: 'status', width: 15 },
         { header: 'Registered On', key: 'registeredOn', width: 15 },
       ];
-      for (const r of registrations as any[]) {
+      for (const r of mappedRegistrations) {
         worksheet.addRow({
-          name: r.student_id?.name || 'N/A',
-          rollNumber: r.student_id?.roll_number || 'N/A',
-          email: r.student_id?.email || 'N/A',
+          name: r.name,
+          rollNumber: r.rollNumber,
+          email: r.email,
           status: r.status,
-          registeredOn: new Date(r.registered_at).toLocaleDateString(),
+          registeredOn: new Date(r.registeredOn).toLocaleDateString(),
         });
       }
       const buffer = await workbook.xlsx.writeBuffer();
@@ -80,15 +113,7 @@ export async function GET(
       success: true,
       data: {
         ...event,
-        registrations: registrations.map((r: any) => ({
-          _id: r._id,
-          student_id: r.student_id?._id,
-          student_name: r.student_id?.name || 'N/A',
-          email: r.student_id?.email || 'N/A',
-          roll_number: r.student_id?.roll_number || 'N/A',
-          status: r.status,
-          registered_at: r.registered_at,
-        })),
+        registrations: mappedRegistrations,
         registration_summary: {
           total: registrationCount,
           confirmed: confirmedCount,
@@ -153,7 +178,7 @@ export async function PUT(
     // If allocating a venue, fetch venue details and set location from it
     if (allocated_resource_id !== undefined) {
       if (allocated_resource_id) {
-        const venue = await Resource.findById(allocated_resource_id).lean() as any;
+        const venue = await Resource.findById(allocated_resource_id).lean<ResourceRecord>();
         if (venue) {
           event.location = venue.name; // Set location to venue name
         }

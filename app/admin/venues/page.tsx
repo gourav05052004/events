@@ -1,13 +1,13 @@
 'use client';
 
-// router not used in this view
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { AddVenueModal } from '@/components/add-venue-modal';
 import { EditVenueModal } from '@/components/edit-venue-modal';
-import { Search, Download, MapPin, Users, Calendar, Plus } from 'lucide-react';
+import { Search, Download, MapPin, Users, Calendar, Plus, Pencil, Trash2 } from 'lucide-react';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -30,6 +30,7 @@ interface Venue {
 }
 
 export default function AdminVenuesPage() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
@@ -91,41 +92,6 @@ export default function AdminVenuesPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    // Validate status value
-    const validStatuses = ['available', 'partially_booked', 'full_booked'];
-    if (!validStatuses.includes(newStatus)) return;
-
-    try {
-      const res = await fetch(`/api/admin/venues/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ manual_status: newStatus }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to update status');
-      }
-
-      // Update the venue in local state
-      setVenues(
-        venues.map((v) =>
-          v._id === id
-            ? {
-                ...v,
-                availability: newStatus as 'available' | 'partially_booked' | 'full_booked',
-              }
-            : v
-        )
-      );
-    } catch (err) {
-      console.error('Error updating status:', err);
-      alert('Failed to update status');
-    }
-  };
-
   const filteredVenues = venues.filter((venue) => {
     const matchesSearch =
       venue.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -136,17 +102,14 @@ export default function AdminVenuesPage() {
     return matchesSearch && matchesAvailability;
   });
 
-  const getAvailabilityColor = (availability: string) => {
-    switch (availability) {
-      case 'available':
-        return 'bg-green-100 text-green-700';
-      case 'partially_booked':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'full_booked':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+  const getInlineAvailabilityClasses = (availability: string) => {
+    return availability === 'available'
+      ? 'bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full'
+      : 'bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full';
+  };
+
+  const getInlineAvailabilityLabel = (availability: string) => {
+    return availability === 'available' ? 'Available' : 'Unavailable';
   };
 
   const getAvailabilityLabel = (availability: string) => {
@@ -370,7 +333,6 @@ export default function AdminVenuesPage() {
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Type</th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Capacity</th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Booked Events</th>
-                    <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Manager</th>
                     <th className="px-6 py-4 text-left text-sm font-bold text-[#2D2D2D]">Actions</th>
                   </tr>
@@ -384,7 +346,8 @@ export default function AdminVenuesPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ backgroundColor: '#F8F9FA' }}
-                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
+                        onClick={() => router.push(`/admin/venues/${venue._id}`)}
+                        className="border-b border-[#E8E8E8] cursor-pointer hover:bg-gray-50 transition-colors duration-150"
                       >
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -392,6 +355,9 @@ export default function AdminVenuesPage() {
                             <div>
                               <p className="font-medium text-[#2D2D2D]">{venue.name}</p>
                               <p className="text-sm text-[#666666]">{venue.contact}</p>
+                              <span className={getInlineAvailabilityClasses(venue.availability)}>
+                                {getInlineAvailabilityLabel(venue.availability)}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -401,38 +367,35 @@ export default function AdminVenuesPage() {
                         </td>
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{venue.capacity.toLocaleString()}</td>
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{venue.bookedEvents}</td>
-                        <td className="px-6 py-4">
-                          <select
-                            value={venue.availability}
-                            onChange={(e) => handleStatusChange(venue._id, e.target.value)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:outline-none focus:ring-2 focus:ring-[#8B1E26] cursor-pointer ${getAvailabilityColor(venue.availability)}`}
-                          >
-                            <option value="available">Available</option>
-                            <option value="partially_booked">Partially Booked</option>
-                            <option value="full_booked">Fully Booked</option>
-                          </select>
-                        </td>
                         <td className="px-6 py-4 text-[#2D2D2D]">{venue.manager}</td>
                         <td className="px-6 py-4">
-                          <div className="flex gap-2">
+                          <div className="flex items-center gap-3">
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => handleEdit(venue)}
-                              className="text-sm font-bold text-[#8B1E26] hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(venue);
+                              }}
+                              aria-label="Edit Venue"
+                              title="Edit Venue"
+                              className="p-2 rounded-md hover:bg-blue-50 text-blue-600 hover:text-blue-800"
                             >
-                              Edit
+                              <Pencil size={16} />
                             </motion.button>
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setDeletingId(venue._id);
                                 setShowDeleteConfirm(true);
                               }}
-                              className="text-sm font-bold text-red-600 hover:underline"
+                              aria-label="Delete Venue"
+                              title="Delete Venue"
+                              className="p-2 rounded-md hover:bg-red-50 text-red-600 hover:text-red-800"
                             >
-                              Delete
+                              <Trash2 size={16} />
                             </motion.button>
                           </div>
                         </td>
@@ -440,7 +403,7 @@ export default function AdminVenuesPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center">
+                      <td colSpan={7} className="px-6 py-12 text-center">
                         <p className="text-[#666666]">No venues found matching your filters.</p>
                       </td>
                     </tr>

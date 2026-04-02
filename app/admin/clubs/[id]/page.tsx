@@ -118,6 +118,7 @@ export default function AdminClubDetailsPage() {
       setSuccess('Club updated successfully');
       setClub(data.data);
       setTimeout(() => setSuccess(''), 3000);
+      router.push('/admin/clubs');
     } catch (err) {
       setError('An error occurred while updating the club');
       console.error('Error:', err);

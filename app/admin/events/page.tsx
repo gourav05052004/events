@@ -212,7 +212,8 @@ export default function AdminEventsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ backgroundColor: '#F8F9FA' }}
-                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
+                        onClick={() => router.push(`/admin/events/${event._id}`)}
+                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{event.title}</td>
                         <td className="px-6 py-4 text-[#666666]">{event.club_name}</td>
@@ -238,7 +239,10 @@ export default function AdminEventsPage() {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => router.push(`/admin/events/${event._id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/events/${event._id}`);
+                            }}
                             className="text-sm font-bold text-[#8B1E26] hover:underline"
                           >
                             View Details

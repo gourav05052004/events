@@ -255,7 +255,8 @@ export default function AdminClubsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ backgroundColor: '#F8F9FA' }}
-                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors"
+                        onClick={() => router.push(`/admin/clubs/${club._id}`)}
+                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{club.club_name}</td>
                         <td className="px-6 py-4 text-[#666666]">{club.faculty_coordinator_name}</td>
@@ -276,7 +277,10 @@ export default function AdminClubsPage() {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => router.push(`/admin/clubs/${club._id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/admin/clubs/${club._id}`);
+                            }}
                             className="text-sm font-bold text-[#8B1E26] hover:underline"
                           >
                             View Details
