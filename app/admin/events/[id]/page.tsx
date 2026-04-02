@@ -9,6 +9,7 @@ import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { formatDateRange } from '@/lib/utils';
 import { ArrowLeft, Calendar, MapPin, Users, Check, X, AlertCircle, FileText, Edit2, Save, Loader, Clock } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -235,6 +236,21 @@ export default function EventDetailsPage() {
       default:
         return null;
     }
+  };
+
+  const handleDownloadExcel = () => {
+    if (!event) return;
+    const rows = event.registrations.map((r) => ({
+      Name: r.student_name,
+      'Roll Number': r.roll_number,
+      Email: r.email,
+      Status: r.status,
+      'Registered On': new Date(r.registered_at).toLocaleDateString(),
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
+    XLSX.writeFile(workbook, `registrations-${eventId}.xlsx`);
   };
 
   return (
@@ -523,9 +539,18 @@ export default function EventDetailsPage() {
                     transition={{ delay: 0.25 }}
                     className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
                   >
-                    <h2 className="text-2xl font-bold text-[#2D2D2D] mb-4">
-                      Registrations ({event.registration_summary.total})
-                    </h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-2xl font-bold text-[#2D2D2D]">
+                        Registrations ({event.registration_summary.total})
+                      </h2>
+                      <button
+                        onClick={handleDownloadExcel}
+                        disabled={event.registrations.length === 0}
+                        className="bg-red-800 hover:bg-red-900 text-white text-sm px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Download Excel
+                      </button>
+                    </div>
                     <div className="grid grid-cols-3 gap-4 mb-6">
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm text-blue-600 mb-2">Confirmed</p>
