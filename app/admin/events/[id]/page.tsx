@@ -268,11 +268,11 @@ export default function EventDetailsPage() {
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => router.push('/admin/events')}
+            onClick={() => router.back()}
             className="flex items-center gap-2 text-[#8B1E26] font-medium mb-8 hover:gap-3 transition-all"
           >
             <ArrowLeft size={20} />
-            Back to Events
+            Back
           </motion.button>
 
           {/* Success Message */}

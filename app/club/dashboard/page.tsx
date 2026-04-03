@@ -10,6 +10,11 @@ import { StatsCard } from '@/components/stats-card';
 import { EventCard } from '@/components/event-card';
 import { Modal } from '@/components/modal';
 import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
+import {
   Calendar,
   Users,
   CheckCircle,
@@ -26,7 +31,7 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/club/dashboard', active: true },
   { label: 'My Events', href: '/club/events' },
   { label: 'Create Event', href: '/club/create-event' },
-  { label: 'Team', href: '/club/team' },
+  { label: 'Leadership', href: '/club/team' },
   { label: 'Settings', href: '/club/settings' },
 ];
 
@@ -72,6 +77,8 @@ export default function ClubDashboard() {
   const [events, setEvents] = useState<EventTableRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState(activeStartYear);
 
   const resolveClubId = async () => {
     const storedClubId = window.localStorage.getItem('clubId');
@@ -110,9 +117,12 @@ export default function ClubDashboard() {
 
       try {
         console.log('[fetchDashboardData] Starting fetch for clubId:', clubId);
+        const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
         
         // Fetch dashboard stats
-        const statsResponse = await fetch(`/api/club/dashboard?clubId=${clubId}`);
+        const statsResponse = await fetch(
+          `/api/club/dashboard?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+        );
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
           console.log('[fetchDashboardData] 📥 Dashboard data - Logo:', statsData.clubLogo || '❌ NO LOGO IN DATABASE');
@@ -126,7 +136,9 @@ export default function ClubDashboard() {
         }
 
         // Fetch events
-        const eventsResponse = await fetch(`/api/club/events/list?clubId=${clubId}`);
+        const eventsResponse = await fetch(
+          `/api/club/events/list?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+        );
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
           setEvents(eventsData.events || []);
@@ -139,7 +151,7 @@ export default function ClubDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [router, selectedYear]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -183,7 +195,10 @@ export default function ClubDashboard() {
 
       // Refresh dashboard data to ensure logo persists
       console.log('[handleLogoUpload] 🔄 Refreshing dashboard data...');
-      const dashboardResponse = await fetch(`/api/club/dashboard?clubId=${clubId}`);
+      const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+      const dashboardResponse = await fetch(
+        `/api/club/dashboard?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+      );
       if (dashboardResponse.ok) {
         const dashboardData = await dashboardResponse.json();
         console.log('[handleLogoUpload] ✅ Dashboard refreshed - Logo URL:', dashboardData.clubLogo || '❌ NO LOGO IN RESPONSE');
@@ -252,7 +267,7 @@ export default function ClubDashboard() {
                 {/* Logo Section */}
                 <motion.div
                   whileHover={{ scale: 1.05 }}
-                  className="flex-shrink-0"
+                  className="shrink-0"
                 >
                   <div className="relative group">
                     <div
@@ -343,9 +358,12 @@ export default function ClubDashboard() {
             transition={{ delay: 0.2 }}
             className="mb-8"
           >
-            <p className="text-[#666666] text-lg">
-              Welcome back! Manage your club events and collaborations below.
-            </p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <p className="text-[#666666] text-lg">
+                Welcome back! Manage your club events and collaborations below.
+              </p>
+              <AcademicYearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+            </div>
           </motion.div>
 
           {/* Stats Cards */}

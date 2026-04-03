@@ -13,6 +13,15 @@ export async function GET(request: NextRequest) {
 
     const studentId = payload.id;
 
+    const { searchParams } = new URL(request.url);
+    const yearStart = searchParams.get('yearStart');
+    const yearEnd = searchParams.get('yearEnd');
+
+    const registrationDateFilter =
+      yearStart && yearEnd
+        ? { registered_at: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
+
     // Connect to database
     await connectDB();
 
@@ -27,6 +36,7 @@ export async function GET(request: NextRequest) {
     // Fetch all registrations for this student
     // Try both ObjectId and string formats in case of data inconsistency
     const registrations = await EventRegistration.find({
+      ...registrationDateFilter,
       $or: [
         { student_id: objectStudentId },  // Try ObjectId match
         { student_id: studentId },         // Try string match (backward compatibility)

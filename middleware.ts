@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname.startsWith('/events') || pathname.startsWith('/event')) {
+    return NextResponse.next();
+  }
+
   // Protect admin routes
   if (pathname.startsWith('/admin')) {
     const adminToken = request.cookies.get('admin_token')?.value;
@@ -42,5 +46,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/club/:path*', '/student/:path*'],
+  matcher: [
+    '/admin/:path*',
+    '/club/:path*',
+    '/student/dashboard/:path*',
+    '/student/registrations/:path*',
+    '/student/profile/:path*',
+  ],
 };

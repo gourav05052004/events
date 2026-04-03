@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Event, EventRegistration } from '@/models';
 
@@ -6,11 +6,20 @@ import { Event, EventRegistration } from '@/models';
  * GET /api/admin/events
  * Fetch all events with related club information
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
-    const events = await Event.find()
+    const { searchParams } = new URL(request.url);
+    const yearStart = searchParams.get('yearStart');
+    const yearEnd = searchParams.get('yearEnd');
+
+    const dateFilter =
+      yearStart && yearEnd
+        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
+
+    const events = await Event.find({ ...dateFilter })
       .populate('primary_club_id', 'club_name email logo brand_color')
       .populate('allocated_resource_id', 'name resource_type')
       .populate('collaborating_clubs', 'club_name')

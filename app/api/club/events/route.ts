@@ -2,6 +2,11 @@ import cloudinary from '@/lib/cloudinary';
 import { createEventWithSlots } from '@/lib/db-helpers';
 import { EventType } from '@/models';
 import { ObjectId } from 'mongodb';
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/db';
+import { Event, EventRegistration } from '@/models';
+import mongoose from 'mongoose';
+import { formatDateRange } from '@/lib/utils';
 
 const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER || 'club-events';
 
@@ -35,6 +40,75 @@ const normalizeResourceType = (value: string) => {
   }
   return null;
 };
+
+export async function GET(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const clubId = request.nextUrl.searchParams.get('clubId');
+    const yearStart = request.nextUrl.searchParams.get('yearStart');
+    const yearEnd = request.nextUrl.searchParams.get('yearEnd');
+
+    if (!clubId || !mongoose.Types.ObjectId.isValid(clubId)) {
+      return NextResponse.json({ error: 'Valid club ID required' }, { status: 400 });
+    }
+
+    const dateFilter =
+      yearStart && yearEnd
+        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
+
+    const objectClubId = new mongoose.Types.ObjectId(clubId);
+    const events = await Event.find({
+      ...dateFilter,
+      $or: [{ primary_club_id: objectClubId }, { collaborating_clubs: objectClubId }],
+    })
+      .populate('primary_club_id', 'club_name logo brand_color')
+      .populate('collaborating_clubs', 'club_name')
+      .sort({ created_at: -1 })
+      .lean();
+
+    const formattedEvents = await Promise.all(
+      events.map(async (event) => {
+        const registrationCount = await EventRegistration.countDocuments({ event_id: event._id });
+        const primaryClub = event.primary_club_id as { _id?: unknown; logo?: string; club_name?: string; brand_color?: string } | null;
+        const isOwner = String(primaryClub?._id || '') === String(clubId);
+
+        return {
+          id: String(event._id),
+          title: event.title,
+          date: formatDateRange(event.date, event.end_date, 'en-GB'),
+          startDate: event.date,
+          endDate: event.end_date,
+          time: event.start_time,
+          location: event.location || 'TBD',
+          image:
+            event.poster_url ||
+            'https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop',
+          status: String(event.status).toLowerCase(),
+          attendees: registrationCount,
+          maxAttendees: event.max_participants,
+          category: event.event_type,
+          clubLogo: primaryClub?.logo || '',
+          clubName: primaryClub?.club_name || 'Unknown Club',
+          brandColor: primaryClub?.brand_color || '#8B1E26',
+          isOwner,
+          collaboratingClubs: Array.isArray(event.collaborating_clubs)
+            ? event.collaborating_clubs.map((club) => {
+                const c = club as { _id?: unknown; club_name?: string };
+                return { id: String(c._id || ''), name: c.club_name || 'Unknown Club' };
+              })
+            : [],
+        };
+      })
+    );
+
+    return NextResponse.json({ events: formattedEvents }, { status: 200 });
+  } catch (error) {
+    console.error('[GET /api/club/events] Error:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {

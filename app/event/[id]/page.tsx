@@ -52,18 +52,24 @@ export default function EventDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newMember, setNewMember] = useState({ name: '', email: '', rollNumber: '' });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [backRoute, setBackRoute] = useState('/');
+  const [backLabel, setBackLabel] = useState('← Back');
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-    // Derive role from token if present (localStorage or cookies)
     const getCookie = (name: string) => {
       const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
       return match ? decodeURIComponent(match[2]) : null;
     };
 
-    const rawToken = token || getCookie('token') || getCookie('club_token') || getCookie('admin_token');
+    const token = localStorage.getItem('token') || getCookie('student_token') || getCookie('token');
+    const loggedIn = Boolean(token);
+
+    setIsLoggedIn(loggedIn);
+    setBackRoute(loggedIn ? '/student/events' : '/');
+    setBackLabel(loggedIn ? '← Back' : '← Back');
+
+    // Derive role from token if present (localStorage or cookies)
+    const rawToken = token || getCookie('club_token') || getCookie('admin_token');
     if (rawToken) {
       try {
         const parts = rawToken.split('.');
@@ -386,7 +392,7 @@ export default function EventDetailPage() {
               onClick={() => router.back()}
               className="w-full px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-bold hover:bg-[#6B1520]"
             >
-              Go Back
+              {backLabel}
             </button>
           </div>
         </div>
@@ -421,11 +427,19 @@ export default function EventDetailPage() {
       <Navbar title="Event Details" hideLoginButton={true} />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-20">
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-red-800 hover:text-red-900 font-medium text-sm cursor-pointer mb-4 w-fit"
+        >
+          {backLabel}
+        </motion.button>
+
         {/* Hero Image */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-xl overflow-hidden mb-8 h-96 bg-gradient-to-br from-[#8B1E26] to-[#6B1520]"
+          className="relative rounded-xl overflow-hidden mb-8 h-96 bg-linear-to-br from-[#8B1E26] to-[#6B1520]"
         >
           {event.poster_url ? (
             <img
@@ -651,9 +665,9 @@ export default function EventDetailPage() {
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
-                                onClick={() => router.push('/student/login')}
+                                onClick={() => router.push(`/login?role=student&redirect=/event/${eventId}`)}
                                 disabled={isSubmitting || isPastDeadline}
-                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
+                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
                               >
                                 {isPastDeadline ? 'Registration Closed' : 'Login to Register'}
                               </motion.button>
@@ -668,7 +682,7 @@ export default function EventDetailPage() {
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleRegister}
                                 disabled={isSubmitting || isPastDeadline}
-                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
+                                className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${isPastDeadline ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white hover:shadow-lg'}`}
                               >
                                 {isPastDeadline ? 'Registration Closed' : (isSubmitting ? 'Processing...' : 'Register Now')}
                               </motion.button>

@@ -17,6 +17,15 @@ export async function GET(request: NextRequest) {
     const studentId = payload.id;
     await connectDB();
 
+    const { searchParams } = new URL(request.url);
+    const yearStart = searchParams.get('yearStart');
+    const yearEnd = searchParams.get('yearEnd');
+
+    const dateFilter =
+      yearStart && yearEnd
+        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
+
     const { ObjectId } = mongoose.Types;
     const objectStudentId = new ObjectId(studentId);
 
@@ -29,14 +38,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get total registered events count
-    const totalRegisteredEvents = await EventRegistration.countDocuments({
-      $or: [
-        { student_id: objectStudentId },
-        { student_id: studentId },
-      ]
-    });
-
     // Get registered events with event details
     const registeredEvents = await EventRegistration.find({
       $or: [
@@ -44,15 +45,18 @@ export async function GET(request: NextRequest) {
         { student_id: studentId },
       ]
     })
-      .populate('event_id')
+      .populate({ path: 'event_id', match: { ...dateFilter } })
       .sort({ registered_at: -1 });
+
+    const scopedRegisteredEvents = registeredEvents.filter((registration) => Boolean(registration.event_id));
+    const totalRegisteredEvents = scopedRegisteredEvents.length;
 
     // Separate upcoming and completed events
     const now = new Date();
     const upcomingRegistrations = [];
     const completedRegistrations = [];
 
-    for (const reg of registeredEvents) {
+    for (const reg of scopedRegisteredEvents) {
       const event = reg.event_id as any;
       if (event && event.date) {
         const eventDate = new Date(event.date);
@@ -65,14 +69,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get recommended events (approved events not registered by student)
-    const registeredEventIds = registeredEvents
+    const registeredEventIds = scopedRegisteredEvents
       .map((reg: any) => reg.event_id?._id)
       .filter(Boolean);
+
+    const dateRange = (dateFilter as { date?: { $gte?: Date; $lte?: Date } }).date;
+    const recommendedDateFilter = dateRange
+      ? { date: { $gte: now > dateRange.$gte! ? now : dateRange.$gte, $lte: dateRange.$lte } }
+      : { date: { $gte: now } };
 
     const recommendedEvents = await Event.find({
       _id: { $nin: registeredEventIds },
       status: 'APPROVED',
-      date: { $gte: now },
+      ...recommendedDateFilter,
       registration_deadline: { $gte: now }
     })
       .sort({ date: 1 })

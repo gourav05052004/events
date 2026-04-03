@@ -9,6 +9,11 @@ import { StatsCard } from '@/components/stats-card';
 import { EventCard } from '@/components/event-card';
 import { formatDateRange } from '@/lib/utils';
 import { Calendar, BookOpen, Trophy } from 'lucide-react';
+import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard', active: true },
@@ -51,6 +56,8 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [studentName, setStudentName] = useState('Student');
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState(activeStartYear);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -61,11 +68,15 @@ export default function StudentDashboard() {
           return;
         }
 
-        const response = await fetch('/api/student/dashboard', {
+        const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+        const response = await fetch(
+          `/api/student/dashboard?yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`,
+          {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
-        });
+          }
+        );
 
         if (response.status === 401) {
           localStorage.removeItem('token');
@@ -96,7 +107,7 @@ export default function StudentDashboard() {
     fetchDashboardData();
 
     return () => {};
-  }, [router]);
+  }, [router, selectedYear]);
 
   const formatDate = (startDate: string, endDate?: string) => {
     return formatDateRange(startDate, endDate, 'en-US');
@@ -177,10 +188,15 @@ export default function StudentDashboard() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">
-              Welcome back, {studentName}!
-            </h1>
-            <p className="text-[#666666]">Here's an overview of your upcoming events and activities.</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">
+                  Welcome back, {studentName}!
+                </h1>
+                <p className="text-[#666666]">Here's an overview of your upcoming events and activities.</p>
+              </div>
+              <AcademicYearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+            </div>
           </motion.div>
 
           {/* Stats Cards */}

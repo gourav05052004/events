@@ -9,6 +9,11 @@ import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
 import { formatDateRange } from '@/lib/utils';
 import { Calendar, Trash2, Loader } from 'lucide-react';
+import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
@@ -40,10 +45,12 @@ export default function StudentRegistrationsPage() {
   const [registrations, setRegistrations] = useState<RegistrationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState(activeStartYear);
 
   useEffect(() => {
     fetchStudentRegistrations();
-  }, []);
+  }, [selectedYear]);
 
   const fetchStudentRegistrations = async () => {
     try {
@@ -58,13 +65,17 @@ export default function StudentRegistrationsPage() {
       }
 
       // Fetch student's registrations
-      const registrationsResponse = await fetch('/api/student/registrations', {
+      const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+      const registrationsResponse = await fetch(
+        `/api/student/registrations?yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`,
+        {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-      });
+        }
+      );
 
       if (!registrationsResponse.ok) {
         if (registrationsResponse.status === 401) {
@@ -186,8 +197,13 @@ export default function StudentRegistrationsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">My Registrations</h1>
-            <p className="text-[#666666]">View and manage all your event registrations.</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">My Registrations</h1>
+                <p className="text-[#666666]">View and manage all your event registrations.</p>
+              </div>
+              <AcademicYearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+            </div>
           </motion.div>
 
           {/* Loading State */}

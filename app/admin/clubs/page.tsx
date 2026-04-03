@@ -256,7 +256,7 @@ export default function AdminClubsPage() {
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ backgroundColor: '#F8F9FA' }}
                         onClick={() => router.push(`/admin/clubs/${club._id}`)}
-                        className="border-b border-[#E8E8E8] hover:bg-[#F8F9FA] transition-colors cursor-pointer"
+                        className="border-b border-[#E8E8E8] hover:bg-gray-50 transition-colors cursor-pointer"
                       >
                         <td className="px-6 py-4 text-[#2D2D2D] font-medium">{club.club_name}</td>
                         <td className="px-6 py-4 text-[#666666]">{club.faculty_coordinator_name}</td>

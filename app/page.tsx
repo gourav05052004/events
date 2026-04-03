@@ -4,9 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
-import { EventCarousel } from '@/components/event-carousel';
 import { formatDateRange } from '@/lib/utils';
-import { ArrowRight, Calendar, Users, Trophy } from 'lucide-react';
+import { ArrowRight, Bell, Calendar, GraduationCap, ShieldCheck, Trophy, Users } from 'lucide-react';
 
 interface UpcomingEvent {
   id: string;
@@ -24,6 +23,36 @@ interface UpcomingEvent {
   brandColor?: string;
 }
 
+interface RawUpcomingEvent {
+  _id?: string;
+  id?: string;
+  title: string;
+  date: string;
+  end_date?: string;
+  start_time?: string;
+  end_time?: string;
+  time?: string;
+  location?: string;
+  poster_url?: string;
+  image?: string;
+  status?: UpcomingEvent['status'] | string;
+  registrations?: number;
+  attendees?: number;
+  max_participants?: number;
+  maxAttendees?: number;
+  club_name?: string;
+  clubLogo?: string;
+  club_logo?: string;
+  club_brand_color?: string;
+  brandColor?: string;
+}
+
+const heroStats = [
+  { key: 'events', value: 50, label: 'Events' },
+  { key: 'clubs', value: 20, label: 'Clubs' },
+  { key: 'students', value: 500, label: 'Students' },
+] as const;
+
 const features = [
   {
     icon: Calendar,
@@ -40,30 +69,200 @@ const features = [
     title: 'Resource Allocation',
     description: 'Efficiently allocate venues and resources for your events',
   },
+  {
+    icon: Bell,
+    title: 'Instant Updates',
+    description:
+      'Stay informed with real-time event approvals, registration confirmations, and schedule changes',
+  },
 ];
+
+function LandingEventCard({
+  title,
+  date,
+  time,
+  location,
+  image,
+  attendees,
+  maxAttendees,
+  clubLogo,
+  clubName,
+  brandColor = '#8B1E26',
+  onClick,
+}: UpcomingEvent & { onClick?: () => void }) {
+  return (
+    <motion.div
+      whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className="bg-white rounded-xl overflow-hidden shadow-md cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+    >
+      <div className="relative overflow-hidden h-40">
+        <img
+          src={image || '/placeholder.svg'}
+          alt={title}
+          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+        />
+
+        {clubLogo && (
+          <div className="absolute bottom-3 left-3 bg-white rounded-lg p-2 shadow-lg">
+            <img src={clubLogo} alt={clubName} className="w-10 h-10 object-cover rounded" />
+          </div>
+        )}
+      </div>
+
+      <div className="p-4">
+        {clubName && (
+          <p className="text-xs font-semibold mb-2" style={{ color: brandColor }}>
+            {clubName}
+          </p>
+        )}
+
+        <h3 className="text-lg font-bold text-[#2D2D2D] mb-3 line-clamp-2">{title}</h3>
+
+        <div className="space-y-2 text-sm text-[#666666]">
+          <div className="flex items-center gap-2">
+            <Calendar size={16} style={{ color: brandColor }} />
+            <span>{date}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar size={16} style={{ color: brandColor }} />
+            <span>{time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users size={16} style={{ color: brandColor }} />
+            <span>
+              {attendees}/{maxAttendees} attendees
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[16px] leading-none" style={{ color: brandColor }}>
+              •
+            </span>
+            <span className="truncate">{location}</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function LandingEventCarousel({
+  title,
+  events,
+  onEventClick,
+}: {
+  title: string;
+  events: UpcomingEvent[];
+  onEventClick?: (eventId: string) => void;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="py-12"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold text-[#2D2D2D]">{title}</h2>
+      </div>
+
+      <motion.div
+        className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide"
+        style={{
+          scrollBehavior: 'smooth',
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+        }}
+        whileTap={{ cursor: 'grabbing' }}
+        transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+      >
+        {events.map((event, index) => (
+          <motion.div
+            key={event.id}
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+            viewport={{ once: true }}
+            className="shrink-0 w-80 sm:w-88"
+          >
+            <LandingEventCard {...event} onClick={() => onEventClick?.(event.id)} />
+          </motion.div>
+        ))}
+      </motion.div>
+
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </motion.section>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    events: 0,
+    clubs: 0,
+    students: 0,
+  });
+
+  useEffect(() => {
+    let frameId = 0;
+    const duration = 1200;
+    const startTime = performance.now();
+
+    const animate = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+      setStats({
+        events: Math.round(heroStats[0].value * easedProgress),
+        clubs: Math.round(heroStats[1].value * easedProgress),
+        students: Math.round(heroStats[2].value * easedProgress),
+      });
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    frameId = requestAnimationFrame(animate);
+
+    return () => cancelAnimationFrame(frameId);
+  }, []);
 
   useEffect(() => {
     const fetchUpcomingEvents = async () => {
       try {
         const response = await fetch('/api/events');
-        const data = await response.json();
-        
+        const data = (await response.json()) as { success?: boolean; events?: RawUpcomingEvent[] };
+
         if (data.success && data.events) {
-          // Format the events data
-          const formattedEvents = data.events.map((event: any) => ({
-            ...event,
+          const formattedEvents = data.events.map((event) => ({
+            id: event.id ?? event._id ?? '',
+            title: event.title,
             date: formatDateRange(event.date, event.end_date, 'en-US'),
-          }));
+            time: event.time ?? [event.start_time, event.end_time].filter(Boolean).join(' - '),
+            location: event.location ?? 'TBD',
+            image:
+              event.poster_url ??
+              event.image ??
+              'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
+            status: (event.status ?? 'approved') as UpcomingEvent['status'],
+            attendees: event.attendees ?? event.registrations ?? 0,
+            maxAttendees: event.maxAttendees ?? event.max_participants ?? 0,
+            clubName: event.club_name,
+            clubLogo: event.clubLogo ?? event.club_logo,
+            brandColor: event.brandColor ?? event.club_brand_color ?? '#8B1E26',
+          })) as UpcomingEvent[];
+
           setUpcomingEvents(formattedEvents);
         }
       } catch (error) {
         console.error('Failed to fetch upcoming events:', error);
-        // Keep empty array on error
         setUpcomingEvents([]);
       } finally {
         setLoading(false);
@@ -93,8 +292,17 @@ export default function Home() {
       <Navbar title="V-Sphere" />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-linear-to-br from-[#8B1E26] via-[#8B1E26] to-[#6B1520] text-white py-24 sm:py-32">
+      <section className="relative overflow-hidden bg-linear-to-br from-red-900 via-red-800 to-red-700 text-white py-24 sm:py-32">
         <div className="absolute inset-0 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 opacity-100"
+            style={{
+              backgroundImage:
+                'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+            }}
+          />
           <motion.div
             animate={{
               x: [0, 50, 0],
@@ -148,7 +356,7 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/login')}
-                className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="px-8 py-4 bg-white text-red-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
               >
                 Get Started
                 <ArrowRight size={20} />
@@ -156,20 +364,29 @@ export default function Home() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  // Check if user is logged in to access student events page
-                  const token = localStorage.getItem('token');
-                  if (token) {
-                    router.push('/student/events');
-                  } else {
-                    router.push('/login?role=student&redirect=/student/events');
-                  }
-                }}
-                className="px-8 py-4 border-2 border-white text-white rounded-lg font-bold hover:bg-white/10 transition-colors"
+                onClick={() => router.push('/events')}
+                className="px-8 py-4 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-red-900 transition-colors duration-200"
               >
                 Browse Events
               </motion.button>
             </motion.div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-white/80 text-sm">
+              <span className="flex items-center gap-1">
+                <span className="font-semibold text-white">{stats.events}+</span>
+                <span>Events</span>
+              </span>
+              <span className="text-white/40">|</span>
+              <span className="flex items-center gap-1">
+                <span className="font-semibold text-white">{stats.clubs}+</span>
+                <span>Clubs</span>
+              </span>
+              <span className="text-white/40">|</span>
+              <span className="flex items-center gap-1">
+                <span className="font-semibold text-white">{stats.students}+</span>
+                <span>Students</span>
+              </span>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -182,12 +399,23 @@ export default function Home() {
             <p className="text-[#666666]">Loading upcoming events...</p>
           </div>
         ) : upcomingEvents.length > 0 ? (
-          <EventCarousel
-            title="Upcoming Events"
-            events={upcomingEvents}
-            onEventClick={(eventId: string) => router.push(`/event/${eventId}`)}    
-            fullBleed={true}
-          />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <LandingEventCarousel
+              title="Upcoming Events"
+              events={upcomingEvents}
+              onEventClick={(eventId: string) => router.push(`/event/${eventId}`)}
+            />
+            <div className="text-center -mt-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push('/events')}
+                className="border border-red-800 text-red-800 hover:bg-red-800 hover:text-white px-6 py-2 rounded-lg transition-colors duration-200 mt-6"
+              >
+                View All Events →
+              </motion.button>
+            </div>
+          </div>
         ) : (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center py-12">
             <Calendar className="mx-auto mb-4 text-[#8B1E26]" size={48} />
@@ -276,24 +504,27 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/login?role=student')}
-              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
+              <GraduationCap size={18} />
               Login as Student
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/login?role=club')}
-              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
+              <Users size={18} />
               Login as Club
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/login?role=admin')}
-              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors"
+              className="px-8 py-4 bg-white text-[#8B1E26] rounded-lg font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
             >
+              <ShieldCheck size={18} />
               Login as Admin
             </motion.button>
           </div>
@@ -311,30 +542,42 @@ export default function Home() {
             <div>
               <h4 className="font-bold mb-3">Platform</h4>
               <ul className="space-y-2 text-white/70">
-                <li>Browse Events</li>
-                <li>Create Events</li>
-                <li>Manage Resources</li>
+                <li>
+                  <a href="/events" className="cursor-pointer hover:text-white transition-colors">
+                    Browse Events
+                  </a>
+                </li>
+                <li>
+                  <a href="/login?role=club" className="cursor-pointer hover:text-white transition-colors">
+                    Create Events
+                  </a>
+                </li>
+                <li>
+                  <a href="/login?role=admin" className="cursor-pointer hover:text-white transition-colors">
+                    Manage Resources
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-3">Support</h4>
               <ul className="space-y-2 text-white/70">
-                <li>Help Center</li>
-                <li>Contact Us</li>
-                <li>Documentation</li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Contact Us</a></li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Documentation</a></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-3">Legal</h4>
               <ul className="space-y-2 text-white/70">
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-                <li>Code of Conduct</li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="cursor-pointer hover:text-white transition-colors">Code of Conduct</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-white/20 pt-8 text-center text-white/70">
-            <p>&copy; 2025 V-Sphere. All rights reserved.</p>
+            <p>&copy; 2026 V-Sphere. All rights reserved.</p>
           </div>
         </div>
       </footer>

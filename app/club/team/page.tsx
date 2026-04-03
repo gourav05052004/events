@@ -12,7 +12,7 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/club/dashboard' },
   { label: 'My Events', href: '/club/events' },
   { label: 'Create Event', href: '/club/create-event' },
-  { label: 'Team', href: '/club/team', active: true },
+  { label: 'Leadership', href: '/club/team', active: true },
   { label: 'Settings', href: '/club/settings' },
 ];
 

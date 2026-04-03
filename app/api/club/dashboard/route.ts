@@ -8,6 +8,13 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const clubId = request.nextUrl.searchParams.get('clubId');
+    const yearStart = request.nextUrl.searchParams.get('yearStart');
+    const yearEnd = request.nextUrl.searchParams.get('yearEnd');
+
+    const dateFilter =
+      yearStart && yearEnd
+        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
     console.log('[GET /api/club/dashboard] Requested clubId:', clubId);
     
     if (!clubId || !mongoose.Types.ObjectId.isValid(clubId)) {
@@ -31,7 +38,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch all events for this club
     const allEvents = await Event.find({ 
-      primary_club_id: new mongoose.Types.ObjectId(clubId) 
+      primary_club_id: new mongoose.Types.ObjectId(clubId),
+      ...dateFilter,
     }).lean();
 
     // Calculate stats

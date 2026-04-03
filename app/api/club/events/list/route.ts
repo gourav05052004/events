@@ -9,6 +9,13 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const clubId = request.nextUrl.searchParams.get('clubId');
+    const yearStart = request.nextUrl.searchParams.get('yearStart');
+    const yearEnd = request.nextUrl.searchParams.get('yearEnd');
+
+    const dateFilter =
+      yearStart && yearEnd
+        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
+        : {};
     console.log('[GET /api/club/events/list] Requested clubId:', clubId);
     
     if (!clubId || !mongoose.Types.ObjectId.isValid(clubId)) {
@@ -22,6 +29,7 @@ export async function GET(request: NextRequest) {
 
     const objectClubId = new mongoose.Types.ObjectId(clubId);
     const query = {
+      ...dateFilter,
       $or: [
         { primary_club_id: objectClubId },
         { collaborating_clubs: objectClubId },

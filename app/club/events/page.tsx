@@ -11,6 +11,11 @@ import { EventCard } from '@/components/event-card';
 import { Modal } from '@/components/modal';
 import { StatusBadge } from '@/components/status-badge';
 import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
+import {
   Calendar,
   Filter,
   LayoutGrid,
@@ -28,7 +33,7 @@ const sidebarItems = [
   { label: 'Dashboard', href: '/club/dashboard' },
   { label: 'My Events', href: '/club/events', active: true },
   { label: 'Create Event', href: '/club/create-event' },
-  { label: 'Team', href: '/club/team' },
+  { label: 'Leadership', href: '/club/team' },
   { label: 'Settings', href: '/club/settings' },
 ];
 
@@ -59,6 +64,8 @@ export default function ClubEventsPage() {
   const [showEventModal, setShowEventModal] = useState(false);
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState(activeStartYear);
 
 
   const resolveClubId = async () => {
@@ -100,8 +107,10 @@ export default function ClubEventsPage() {
           router.push('/club/login');
           return;
         }
-
-        const res = await fetch(`/api/club/events/list?clubId=${clubId}`);
+        const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+        const res = await fetch(
+          `/api/club/events/list?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+        );
 
         if (res.status === 401) {
           handleClubUnauthorized(router, sessionExpiredRef);
@@ -125,7 +134,7 @@ export default function ClubEventsPage() {
     };
 
     fetchEvents();
-  }, []);
+  }, [router, selectedYear]);
 
   const filteredEvents = useMemo(() => {
     return clubEvents.filter((event) => {
@@ -195,12 +204,13 @@ export default function ClubEventsPage() {
                   Track approvals, manage registrations, and keep your events on schedule.
                 </p>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 items-center">
+                <AcademicYearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => router.push('/club/create-event')}
-                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all"
+                  className="flex items-center gap-2 px-5 py-3 bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold hover:shadow-lg transition-all"
                 >
                   <Plus size={18} />
                   Create Event
@@ -332,7 +342,7 @@ export default function ClubEventsPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/club/create-event')}
-                className="px-6 py-3 bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold"
+                className="px-6 py-3 bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white rounded-lg font-bold"
               >
                 Create Event
               </motion.button>
@@ -535,7 +545,7 @@ export default function ClubEventsPage() {
                 }
                 className={`flex items-center gap-2 px-5 py-3 rounded-lg font-bold transition-colors ${
                   selectedEvent.status === 'approved'
-                    ? 'bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white'
+                    ? 'bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
                 }`}
               >

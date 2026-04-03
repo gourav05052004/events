@@ -9,6 +9,11 @@ import { Sidebar } from '@/components/sidebar';
 import { StatsCard } from '@/components/stats-card';
 import { Modal } from '@/components/modal';
 import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
+import {
   Calendar,
   Users,
   Building2,
@@ -77,22 +82,8 @@ export default function AdminDashboard() {
       registrationOverview: { total: 0, avgPerEvent: 0, topEvents: [] },
   });
 
-  // Academic year selector state
-  const getCurrentAcademicStart = () => {
-    const now = new Date();
-    const month = now.getMonth(); // 0-based, July = 6
-    return month >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-  };
-
-  const [selectedYearStart, setSelectedYearStart] = useState<number>(getCurrentAcademicStart());
-
-  const buildYearOptions = (centerStart: number) => {
-    const opts: number[] = [];
-    for (let i = centerStart - 2; i <= centerStart; i++) opts.push(i);
-    return opts;
-  };
-
-  const yearOptions = buildYearOptions(getCurrentAcademicStart());
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState<number>(activeStartYear);
 
   const [, setIsLoading] = useState(true);
 
@@ -108,11 +99,9 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // Compute ISO date range for selected academic year (Jul 1 -> May 31)
-        const startIso = new Date(`${selectedYearStart}-07-01`).toISOString();
-        const endIso = new Date(`${selectedYearStart + 1}-05-31T23:59:59`).toISOString();
+        const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
 
-        const url = `/api/admin/dashboard?yearStart=${encodeURIComponent(startIso)}&yearEnd=${encodeURIComponent(endIso)}`;
+        const url = `/api/admin/dashboard?yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`;
         const res = await fetch(url);
         if (!res.ok) {
           const text = await res.text();
@@ -160,7 +149,7 @@ export default function AdminDashboard() {
     };
 
     fetchDashboardData();
-  }, [selectedYearStart]);
+  }, [selectedYear]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -197,19 +186,10 @@ export default function AdminDashboard() {
             <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Welcome, Administrator</h1>
             <p className="text-[#666666]">Manage all events, venues, and oversee campus activities.</p>
             <div className="flex justify-end mt-4">
-              <label className="sr-only" htmlFor="academicYear">Academic year</label>
-              <select
-                id="academicYear"
-                value={selectedYearStart}
-                onChange={(e) => setSelectedYearStart(Number(e.target.value))}
-                className="bg-white border border-[#E8E8E8] rounded-lg px-3 py-2 text-sm text-[#2D2D2D]"
-              >
-                {yearOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {`${s}–${(s + 1).toString().slice(-2)} (Jul ${s} – May ${s + 1})`}
-                  </option>
-                ))}
-              </select>
+              <AcademicYearSelector
+                selectedYear={selectedYear}
+                onChange={setSelectedYear}
+              />
             </div>
           </motion.div>
 

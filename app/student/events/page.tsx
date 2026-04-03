@@ -9,6 +9,11 @@ import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
 import { formatDateRange } from '@/lib/utils';
 import { Search, Filter, Loader } from 'lucide-react';
+import {
+  AcademicYearSelector,
+  getAcademicYearRange,
+  getAcademicYears,
+} from '@/components/academic-year-selector';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/student/dashboard' },
@@ -33,6 +38,23 @@ interface EventData {
   registrations: number;
   max_participants: number;
   poster_url?: string;
+  categories?: string[];
+}
+
+interface BrowseEvent {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  image: string;
+  status: 'approved' | 'pending' | 'cancelled';
+  attendees: number;
+  maxAttendees: number;
+  clubName: string;
+  clubLogo?: string;
+  brandColor: string;
+  categories: string[];
 }
 
 export default function EventsPage() {
@@ -40,8 +62,10 @@ export default function EventsPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [allEvents, setAllEvents] = useState<any[]>([]);
+  const [allEvents, setAllEvents] = useState<BrowseEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { activeStartYear } = getAcademicYears();
+  const [selectedYear, setSelectedYear] = useState(activeStartYear);
   
 
   const categories = ['All', 'Technical', 'Sports', 'Cultural', 'Entrepreneurship'];
@@ -50,7 +74,10 @@ export default function EventsPage() {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/admin/events');
+        const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+        const response = await fetch(
+          `/api/student/events?yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+        );
         if (response.ok) {
           const data = await response.json();
           // Filter to only approved events at fetch time (case-insensitive)
@@ -59,7 +86,7 @@ export default function EventsPage() {
           );
 
           // Format events to match EventCard props and include categories array
-          const formattedEvents = approvedRaw.map((event: EventData) => ({
+          const formattedEvents: BrowseEvent[] = approvedRaw.map((event: EventData) => ({
             id: event._id,
             title: event.title,
             date: formatDateRange(event.date, event.end_date, 'en-GB'),
@@ -72,7 +99,7 @@ export default function EventsPage() {
             clubName: event.club_name,
             clubLogo: event.club_logo,
             brandColor: event.club_brand_color || '#8B1E26',
-            categories: (event as any).categories || [],
+            categories: event.categories || [],
           }));
 
           // Store only approved events
@@ -89,7 +116,7 @@ export default function EventsPage() {
     fetchEvents();
 
     // Notifications removed — no fetch for unread count
-  }, []);
+  }, [selectedYear]);
 
   // Derived display list based on selected category.
   const eventsToDisplay = (() => {
@@ -122,7 +149,7 @@ export default function EventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Browse Events" userRole="student" />
+      <Navbar title="Browse Events" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -131,20 +158,22 @@ export default function EventsPage() {
 
       <div className="md:ml-64 pt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          {/* Header */}
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-            <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Discover Events</h1>
-            <p className="text-[#666666]">Find and register for exciting events happening on campus.</p>
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">Discover Events</h1>
+                <p className="text-[#666666]">Find and register for exciting events happening on campus.</p>
+              </div>
+              <AcademicYearSelector selectedYear={selectedYear} onChange={setSelectedYear} />
+            </div>
           </motion.div>
 
-          {/* Search & Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="bg-white rounded-xl shadow-sm p-6 mb-8"
           >
-            {/* Search Box */}
             <div className="relative mb-6">
               <Search className="absolute left-4 top-3.5 text-[#8B1E26]" size={20} />
               <input
@@ -156,7 +185,6 @@ export default function EventsPage() {
               />
             </div>
 
-            {/* Category Filter */}
             <div>
               <p className="text-sm font-medium text-[#2D2D2D] mb-3 flex items-center gap-2">
                 <Filter size={16} />
@@ -181,14 +209,12 @@ export default function EventsPage() {
             </div>
           </motion.div>
 
-          {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
               <Loader className="w-8 h-8 text-[#8B1E26] animate-spin" />
             </div>
           )}
 
-          {/* Results Count */}
           {!isLoading && (
             <motion.p
               initial={{ opacity: 0 }}
@@ -200,7 +226,6 @@ export default function EventsPage() {
             </motion.p>
           )}
 
-          {/* Events Grid */}
           {!isLoading && (
             <motion.div
               variants={container}
@@ -210,21 +235,14 @@ export default function EventsPage() {
             >
               {eventsToDisplay.map((event) => (
                 <motion.div key={event.id} variants={item}>
-                  <EventCard
-                    {...event}
-                    onClick={() => router.push(`/event/${event.id}`)}
-                  />
+                  <EventCard {...event} onClick={() => router.push(`/event/${event.id}`)} />
                 </motion.div>
               ))}
             </motion.div>
           )}
 
           {!isLoading && eventsToDisplay.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
               <p className="text-[#666666] text-lg">No events found.</p>
               <motion.button
                 whileHover={{ scale: 1.05 }}
