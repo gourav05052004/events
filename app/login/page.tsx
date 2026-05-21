@@ -26,6 +26,21 @@ const roleInfo = {
   },
 };
 
+const demoCredentials = {
+  admin: [
+    { email: 'admin@college.edu', password: 'Admin@123456' }
+  ],
+  club: [
+    { email: 'club@college.edu', password: 'Club@1234' },
+    { email: 'mlclub@college.edu', password: 'Club@123456' },
+    { email: 'tnn@college.edu', password: 'Club@1234' }
+  ],
+  student: [
+    { email: '11f15.gouravkumarsonu@gmail.com', password: '123456' },
+    { email: 'sakib@gmail.com', password: '123456' }
+  ]
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -390,16 +405,30 @@ export default function LoginPage() {
 
         {/* Demo Credentials */}
         <motion.div
+          key={role + '-demo'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="mt-8 bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white text-center text-sm"
+          className="mt-8 bg-white/10 backdrop-blur-sm rounded-lg p-4 text-white text-sm"
         >
-          <p className="font-medium mb-2">Demo Credentials:</p>
-          <p className="text-white/80">
-            Email: <span className="font-mono">demo@college.edu</span> | Password:{' '}
-            <span className="font-mono">password123</span>
-          </p>
+          <p className="font-medium mb-3 text-center">Click to autofill Demo Credentials ({role}):</p>
+          <div className="flex flex-col gap-2">
+            {demoCredentials[role].map((cred, idx) => (
+              <div 
+                key={idx}
+                onClick={() => {
+                  setEmail(cred.email);
+                  setPassword(cred.password);
+                  setErrors({});
+                  toast.success('Credentials autofilled!');
+                }}
+                className="flex flex-col sm:flex-row justify-between items-center bg-white/5 hover:bg-white/20 p-2 rounded cursor-pointer transition-colors border border-white/10"
+              >
+                <span className="font-mono text-xs sm:text-sm text-white/90 truncate">{cred.email}</span>
+                <span className="font-mono text-xs sm:text-sm text-white/60 mt-1 sm:mt-0">Pwd: {cred.password}</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </motion.div>
     </main>

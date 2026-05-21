@@ -187,9 +187,7 @@ export default function ClubEventsPage() {
     router.push(`/club/events/${event.id}`);
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
-
+  const executeDeleteEvent = async (eventId: string) => {
     try {
       const response = await fetch(`/api/club/events/${eventId}`, {
         method: 'DELETE',
@@ -210,6 +208,31 @@ export default function ClubEventsPage() {
       console.error('Delete error:', error);
       toast.error('Error deleting event');
     }
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="font-medium text-[#2D2D2D]">Are you sure you want to delete this event?</p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-3 py-1.5 text-sm font-medium border border-[#E8E8E8] text-[#666666] rounded-md hover:bg-[#F8F9FA]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              executeDeleteEvent(eventId);
+            }}
+            className="px-3 py-1.5 text-sm font-medium bg-[#8B1E26] text-white rounded-md hover:bg-[#6B1520]"
+          >
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity, position: 'top-center' });
   };
 
   return (

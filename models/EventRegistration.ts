@@ -5,6 +5,7 @@ export type RegistrationStatus = 'CONFIRMED' | 'WAITLISTED';
 export interface IEventRegistration extends Document {
   event_id: mongoose.Types.ObjectId;
   student_id: mongoose.Types.ObjectId;
+  team_id?: mongoose.Types.ObjectId | null;
   status: RegistrationStatus;
   registered_at: Date;
 }
@@ -13,6 +14,7 @@ const eventRegistrationSchema = new Schema<IEventRegistration>(
   {
     event_id: { type: Schema.Types.ObjectId, ref: 'Event', required: true },
     student_id: { type: Schema.Types.ObjectId, ref: 'Student', required: true },
+    team_id: { type: Schema.Types.ObjectId, ref: 'Team', default: null },
     status: { type: String, enum: ['CONFIRMED', 'WAITLISTED'], default: 'CONFIRMED' },
     registered_at: { type: Date, default: Date.now },
   },
@@ -21,6 +23,9 @@ const eventRegistrationSchema = new Schema<IEventRegistration>(
 
 // Prevent duplicate registrations for same student and event
 eventRegistrationSchema.index({ event_id: 1, student_id: 1 }, { unique: true });
+
+eventRegistrationSchema.set('toJSON', { virtuals: true });
+eventRegistrationSchema.set('toObject', { virtuals: true });
 
 export default mongoose.models.EventRegistration ||
   mongoose.model<IEventRegistration>('EventRegistration', eventRegistrationSchema);

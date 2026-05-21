@@ -38,18 +38,33 @@ export async function GET(request: NextRequest) {
     const yearStart = searchParams.get('yearStart');
     const yearEnd = searchParams.get('yearEnd');
 
-    const dateFilter =
-      yearStart && yearEnd
-        ? { date: { $gte: new Date(yearStart), $lte: new Date(yearEnd) } }
-        : {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const events = await Event.find({
+    const queryConditions: any = {
       status: 'APPROVED',
-      ...dateFilter,
-    })
+    };
+
+    if (yearStart && yearEnd) {
+      const startLimit = new Date(yearStart);
+      const endLimit = new Date(yearEnd);
+      const lowerBound = startLimit > today ? startLimit : today;
+
+      queryConditions.$or = [
+        { date: { $gte: lowerBound, $lte: endLimit } },
+        { end_date: { $gte: lowerBound }, date: { $gte: startLimit, $lte: endLimit } },
+      ];
+    } else {
+      queryConditions.$or = [
+        { date: { $gte: today } },
+        { end_date: { $gte: today } },
+      ];
+    }
+
+    const events = await Event.find(queryConditions)
       .populate('primary_club_id', 'club_name logo brand_color')
       .populate('allocated_resource_id', 'name location')
-      .sort({ date: 1 })
+      .sort({ date: -1 })
       .lean<PublicEventRecord[]>();
 
     const publicEvents = await Promise.all(

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Navbar } from '@/components/navbar';
 import { formatDateRange } from '@/lib/utils';
-import { ArrowRight, Bell, Calendar, GraduationCap, ShieldCheck, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Bell, Calendar, GraduationCap, ShieldCheck, Trophy, Users, Github } from 'lucide-react';
 
 interface UpcomingEvent {
   id: string;
@@ -292,8 +292,12 @@ export default function Home() {
       <Navbar title="V-Sphere" />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-linear-to-br from-red-900 via-red-800 to-red-700 text-white py-24 sm:py-32">
-        <div className="absolute inset-0 overflow-hidden">
+      <section 
+        className="relative overflow-hidden text-white min-h-[calc(100vh-70px)] flex items-center justify-center bg-center bg-cover bg-no-repeat"
+        style={{ backgroundImage: "url('/hero.png')" }}
+      >
+        <div className="absolute inset-0 bg-[#6a151b]/80 pointer-events-none z-0"></div>
+        <div className="absolute inset-0 overflow-hidden z-0">
           <div
             aria-hidden="true"
             className="absolute inset-0 opacity-100"
@@ -309,7 +313,7 @@ export default function Home() {
               y: [0, 30, 0],
             }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            className="absolute top-10 right-20 w-96 h-96 bg-white/5 rounded-full blur-3xl"
+            className="absolute top-10 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"
           />
           <motion.div
             animate={{
@@ -317,11 +321,11 @@ export default function Home() {
               y: [0, -30, 0],
             }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-            className="absolute bottom-10 left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl"
+            className="absolute bottom-10 left-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"
           />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 w-full py-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -332,31 +336,30 @@ export default function Home() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-5xl sm:text-6xl font-bold mb-6 text-balance"
+              className="text-5xl sm:text-7xl font-bold mb-6 text-balance font-mono tracking-tight leading-tight"
             >
-              Manage Your College Events Seamlessly
+              Manage Your College<br className="hidden sm:block" /> Events Seamlessly
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-white/90 mb-8 max-w-2xl mx-auto text-balance"
+              className="text-lg sm:text-xl text-white/90 mb-10 max-w-3xl mx-auto text-balance font-mono leading-relaxed"
             >
-              V-Sphere is your all-in-one platform for event discovery, registration, and resource
-              management across campus.
+              V-Sphere is your all-in-one platform<br className="hidden sm:block" /> for event discovery, registration, and<br className="hidden sm:block" /> resource management across campus.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
+              className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center"
             >
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/login')}
-                className="px-8 py-4 bg-white text-red-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2"
+                className="px-8 py-3.5 bg-white text-[#6a151b] rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 font-mono text-lg min-w-[200px]"
               >
                 Get Started
                 <ArrowRight size={20} />
@@ -365,25 +368,25 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/events')}
-                className="px-8 py-4 border-2 border-white text-white rounded-lg font-semibold hover:bg-white hover:text-red-900 transition-colors duration-200"
+                className="px-8 py-3.5 border-2 border-white text-white rounded-xl font-bold hover:bg-white hover:text-[#6a151b] transition-colors duration-200 font-mono text-lg min-w-[200px]"
               >
                 Browse Events
               </motion.button>
             </motion.div>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-white/80 text-sm">
-              <span className="flex items-center gap-1">
-                <span className="font-semibold text-white">{stats.events}+</span>
+            <div className="mt-14 flex flex-wrap items-center justify-center gap-6 text-white/90 text-sm font-mono tracking-wider">
+              <span className="flex items-center gap-2">
+                <span className="font-bold">{stats.events}+</span>
                 <span>Events</span>
               </span>
               <span className="text-white/40">|</span>
-              <span className="flex items-center gap-1">
-                <span className="font-semibold text-white">{stats.clubs}+</span>
+              <span className="flex items-center gap-2">
+                <span className="font-bold">{stats.clubs}+</span>
                 <span>Clubs</span>
               </span>
               <span className="text-white/40">|</span>
-              <span className="flex items-center gap-1">
-                <span className="font-semibold text-white">{stats.students}+</span>
+              <span className="flex items-center gap-2">
+                <span className="font-bold">{stats.students}+</span>
                 <span>Students</span>
               </span>
             </div>
@@ -434,18 +437,18 @@ export default function Home() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              <p className="text-sm uppercase tracking-[0.2em] text-[#8B1E26] font-semibold mb-3">Why V-Sphere</p>
+              <p className="font-mono text-sm uppercase tracking-[0.2em] text-[#8B1E26] font-semibold mb-3">Why V-Sphere</p>
               <h2
                 className="text-4xl font-bold text-[#2D2D2D] mb-4"
                 style={{ fontFamily: '"Playfair Display", serif' }}
               >
                 Built to run campus life smoothly.
               </h2>
-              <p className="text-[#666666] text-lg mb-8">
+              <p className="font-mono text-[#666666] text-lg mb-8">
                 A focused system for clubs, students, and admins with fast approvals, clean
                 scheduling, and transparent attendance tracking.
               </p>
-              <div className="flex items-center gap-4 text-sm text-[#666666]">
+              <div className="font-mono flex items-center gap-4 text-sm text-[#666666]">
                 <span className="flex items-center gap-2">
                   <Calendar size={18} className="text-[#8B1E26]" /> Smart scheduling
                 </span>
@@ -473,8 +476,8 @@ export default function Home() {
                     <div className="w-12 h-12 bg-[#8B1E26] text-white rounded-lg flex items-center justify-center mb-4">
                       <Icon size={24} />
                     </div>
-                    <h3 className="text-lg font-bold text-[#2D2D2D] mb-2">{feature.title}</h3>
-                    <p className="text-[#666666] text-sm">{feature.description}</p>
+                    <h3 className="font-mono text-lg font-bold text-[#2D2D2D] mb-2">{feature.title}</h3>
+                    <p className="font-mono text-[#666666] text-sm">{feature.description}</p>
                   </motion.div>
                 );
               })}
@@ -532,8 +535,10 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#2D2D2D] text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="bg-gradient-to-b from-[#1a1a1a] via-black to-black border-t border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)] text-white py-12 relative overflow-hidden">
+        {/* Subtle glossy overlay */}
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="text-2xl font-bold mb-2">V-Sphere</h3>
@@ -576,8 +581,20 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-white/20 pt-8 text-center text-white/70">
+          <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-white/70">
             <p>&copy; 2026 V-Sphere. All rights reserved.</p>
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-sm">Made by Gourav Kumar Sonu</span>
+              <a 
+                href="https://github.com/gourav05052004" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:text-white hover:scale-110 transition-all duration-200 bg-white/5 hover:bg-white/20 p-2 rounded-full border border-white/10"
+                title="GitHub Profile"
+              >
+                <Github size={18} />
+              </a>
+            </div>
           </div>
         </div>
       </footer>

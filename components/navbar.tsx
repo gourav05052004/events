@@ -144,7 +144,8 @@ export function Navbar({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-2xl font-bold text-[#8B1E26]"
+              onClick={() => router.push('/')}
+              className="text-2xl font-bold text-[#8B1E26] cursor-pointer hover:opacity-80 transition-opacity"
             >
               {title || 'V-Sphere'}
             </motion.div>

@@ -27,6 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const registrations = await EventRegistration.find({ event_id: new mongoose.Types.ObjectId(eventId) })
       .populate('student_id', 'name email')
+      .populate('team_id', 'team_name team_leader_id')
       .sort({ registered_at: -1 })
       .lean();
 
@@ -36,6 +37,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       email: r.student_id?.email || '',
       registeredAt: r.registered_at,
       status: r.status || '',
+      teamName: r.team_id?.team_name || null,
+      teamId: r.team_id?._id?.toString() || null,
+      isLeader: r.team_id?.team_leader_id && r.student_id?._id
+        ? r.team_id.team_leader_id.toString() === r.student_id._id.toString()
+        : false,
     }));
 
     return NextResponse.json({ registrations: formatted }, { status: 200 });

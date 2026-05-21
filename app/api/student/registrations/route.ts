@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Convert student ID to ObjectId for MongoDB queries
     const { ObjectId } = require('mongoose').Types;
     const objectStudentId = new ObjectId(studentId);
-    
+
     console.log('🔍 Registrations Fetch Request:');
     console.log('  studentId (from token):', studentId);
     console.log('  objectStudentId (converted):', objectStudentId.toString());
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     })
       .populate('event_id')
       .sort({ registered_at: -1 });
-    
+
     console.log('📊 Query Result:');
     console.log('  Found registrations:', registrations.length);
     if (registrations.length > 0) {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           // Handle both populated and non-populated event_id
           const event = reg.event_id;
           const eventData = event._id ? event : null;
-          
+
           return {
             _id: reg._id,
             event_id: eventData?._id || event,

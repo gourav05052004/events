@@ -8,6 +8,7 @@ import { Sidebar } from '@/components/sidebar';
 import { AddVenueModal } from '@/components/add-venue-modal';
 import { EditVenueModal } from '@/components/edit-venue-modal';
 import { Search, Download, MapPin, Users, Calendar, Plus, Pencil, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const sidebarItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -83,7 +84,7 @@ export default function AdminVenuesPage() {
       setDeletingId(null);
     } catch (err) {
       console.error('Error deleting venue:', err);
-      alert('Failed to delete venue');
+      toast.error('Failed to delete venue');
     }
   };
 

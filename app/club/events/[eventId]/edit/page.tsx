@@ -26,6 +26,7 @@ export default function EditEventPage() {
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<any | null>(null);
   const [venues, setVenues] = useState<any[]>([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [form, setForm] = useState<any>({
     title: '',
@@ -138,7 +139,7 @@ export default function EditEventPage() {
     else {
       const sd = new Date(form.startDate);
       const today = new Date();
-      today.setHours(0,0,0,0);
+      today.setHours(0, 0, 0, 0);
       if (sd < today) errs.startDate = 'Date cannot be in the past';
     }
     const maxCap = Number(form.maxParticipants);
@@ -201,7 +202,7 @@ export default function EditEventPage() {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
         <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
-        <Sidebar items={sidebarItems} />
+        <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto"></div>
@@ -216,7 +217,7 @@ export default function EditEventPage() {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
         <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
-        <Sidebar items={sidebarItems} />
+        <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
@@ -232,7 +233,7 @@ export default function EditEventPage() {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
         <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
-        <Sidebar items={sidebarItems} />
+        <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
             <h2 className="text-2xl font-bold mb-4">This event cannot be edited</h2>
@@ -247,7 +248,7 @@ export default function EditEventPage() {
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
       <Navbar title="Edit Event" userRole="club" showBackButton={true} onBackClick={() => router.push('/club/dashboard')} onMenuClick={() => setMobileMenuOpen(true)} />
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
@@ -349,7 +350,7 @@ export default function EditEventPage() {
                       onClick={() => {
                         // remove selected file and revert to original image
                         if (previewUrl && posterFile) {
-                          try { URL.revokeObjectURL(previewUrl); } catch {}
+                          try { URL.revokeObjectURL(previewUrl); } catch { }
                         }
                         setPosterFile(null);
                         setSelectedFilename('');
