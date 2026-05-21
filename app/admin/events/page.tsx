@@ -116,7 +116,7 @@ export default function AdminEventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Management" userRole="admin" />
+      <Navbar title="Event Management" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

@@ -21,12 +21,13 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-const sidebarItems = [
-  { label: 'Dashboard', href: '/admin/dashboard', active: true },
-  { label: 'Events', href: '/admin/events' },
-  { label: 'Clubs', href: '/admin/clubs' },
-  { label: 'Venues', href: '/admin/venues' },
-];
+  const sidebarItems = [
+    { label: 'Dashboard', href: '/admin/dashboard', active: true },
+    { label: 'Events', href: '/admin/events' },
+    { label: 'Clubs', href: '/admin/clubs' },
+    { label: 'Venues', href: '/admin/venues' },
+  ];
+
 
 interface PendingEvent {
   _id?: string;
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Admin Dashboard" userRole="admin" />
+      <Navbar title="Admin Dashboard" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

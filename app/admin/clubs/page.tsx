@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { AddClubModal } from '@/components/add-club-modal';
@@ -34,6 +35,7 @@ export default function AdminClubsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [error, setError] = useState('');
+  const [updatingClubId, setUpdatingClubId] = useState<string | null>(null);
 
   // Fetch clubs from API
   useEffect(() => {
@@ -62,6 +64,50 @@ export default function AdminClubsPage() {
 
   const handleAddClubSuccess = () => {
     fetchClubs();
+  };
+
+  const handleClubStatusToggle = async (clubId: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
+    const actionLabel = nextStatus ? 'activate' : 'deactivate';
+    const loadingMessage = nextStatus ? 'Activating club...' : 'Deactivating club...';
+    const successMessage = nextStatus ? 'Club activated successfully' : 'Club deactivated successfully';
+
+    try {
+      setUpdatingClubId(clubId);
+      setError('');
+      const loadingToastId = toast.loading(loadingMessage);
+
+      const response = await fetch(`/api/admin/clubs/${clubId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: nextStatus }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        const message = data.error || `Failed to ${actionLabel} club`;
+        setError(message);
+        toast.error(message, { id: loadingToastId });
+        return;
+      }
+
+      setClubs((prev) =>
+        prev.map((club) =>
+          club._id === clubId ? { ...club, is_active: nextStatus } : club
+        )
+      );
+      toast.success(successMessage, { id: loadingToastId });
+    } catch (err) {
+      console.error('Error toggling club status:', err);
+      const message = `An error occurred while trying to ${actionLabel} the club`;
+      setError(message);
+      toast.error(message);
+    } finally {
+      setUpdatingClubId(null);
+    }
   };
 
   const filteredClubs = clubs.filter((club) => {
@@ -97,7 +143,7 @@ export default function AdminClubsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Clubs Management" userRole="admin" />
+      <Navbar title="Clubs Management" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -274,17 +320,40 @@ export default function AdminClubsPage() {
                           {new Date(club.created_at).toLocaleDateString('en-GB')}
                         </td>
                         <td className="px-6 py-4">
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/admin/clubs/${club._id}`);
-                            }}
-                            className="text-sm font-bold text-[#8B1E26] hover:underline"
-                          >
-                            View Details
-                          </motion.button>
+                          <div className="flex items-center gap-3">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/admin/clubs/${club._id}`);
+                              }}
+                              className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold border border-[#8B1E26] text-[#8B1E26] rounded-md hover:bg-[#8B1E26]/5 transition-colors w-32"
+                            >
+                              View Details
+                            </motion.button>
+
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleClubStatusToggle(club._id, club.is_active);
+                              }}
+                              disabled={updatingClubId === club._id}
+                              className={`inline-flex items-center justify-center px-4 py-2 text-sm font-bold rounded-md text-white transition-colors w-32 ${
+                                club.is_active
+                                  ? 'bg-red-600 hover:bg-red-700'
+                                  : 'bg-green-600 hover:bg-green-700'
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {updatingClubId === club._id
+                                ? 'Updating...'
+                                : club.is_active
+                                ? 'Make Inactive'
+                                : 'Activate'}
+                            </motion.button>
+                          </div>
                         </td>
                       </motion.tr>
                     ))}

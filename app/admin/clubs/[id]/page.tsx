@@ -146,7 +146,7 @@ export default function AdminClubDetailsPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Club Details" userRole="admin" />
+          <Navbar title="Club Details" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -169,7 +169,7 @@ export default function AdminClubDetailsPage() {
   if (!club) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Club Details" userRole="admin" />
+          <Navbar title="Club Details" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -194,7 +194,7 @@ export default function AdminClubDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Details" userRole="admin" />
+      <Navbar title="Club Details" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

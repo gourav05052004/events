@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyRequestToken } from '@/lib/middleware';
 import connectDB from '@/lib/db';
-import { Event, EventRegistration } from '@/models';
+import { Club, Event, EventRegistration, Resource } from '@/models';
 
 /**
  * GET /api/admin/dashboard
@@ -106,12 +106,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Active clubs and venues derived from events in range (distinct)
-    const activeClubIds = await Event.distinct('primary_club_id', dateFilter);
-    const totalClubs = activeClubIds ? activeClubIds.length : 0;
-
-    const activeResourceIds = await Event.distinct('allocated_resource_id', dateFilter);
-    const totalVenues = activeResourceIds ? activeResourceIds.length : 0;
+    // Active clubs and venues should come from the database collections directly,
+    // not from event references, so these counts stay accurate even when the
+    // selected academic year has no events for a club or venue.
+    const totalClubs = await Club.countDocuments({ is_active: true });
+    const totalVenues = await Resource.countDocuments();
 
     // Registration overview: compute total registrations and top events
     // Build a match stage for event date filtering inside registration pipelines

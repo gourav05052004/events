@@ -255,7 +255,7 @@ export default function EventDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" userRole="admin" />
+      <Navbar title="Event Details" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -282,7 +282,7 @@ export default function EventDetailsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-lg mb-6"
             >
-              <Check className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+              <Check className="text-green-600 shrink-0 mt-0.5" size={20} />
               <p className="text-green-700 text-sm">{success}</p>
             </motion.div>
           )}
@@ -294,7 +294,7 @@ export default function EventDetailsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg mb-6"
             >
-              <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+              <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={20} />
               <p className="text-red-700 text-sm">{error}</p>
             </motion.div>
           )}
@@ -409,11 +409,7 @@ export default function EventDetailsPage() {
                     </div>
                     {isEditing ? (
                       <div className="space-y-4">
-                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <p className="text-sm text-blue-800">
-                            📌 The event location will automatically be set to the allocated venue name.
-                          </p>
-                        </div>
+                        
                         <div>
                           <label className="block text-sm font-medium text-[#2D2D2D] mb-2">
                             Select Available Venue
@@ -425,7 +421,8 @@ export default function EventDetailsPage() {
                           >
                             <option value="">-- Select a venue --</option>
                             {venues
-                              .filter((v) => v.type === event?.requested_resource_type)
+                              // Allow admin to select any available venue regardless of requested type
+                              .filter((v) => v.availability === 'available')
                               .map((venue) => (
                                 <option key={venue._id} value={venue._id}>
                                   {venue.name} ({venue.type}) - {venue.capacity} capacity
@@ -494,43 +491,7 @@ export default function EventDetailsPage() {
                     )}
                   </motion.div>
 
-                  {/* Venue Availability */}
-                  {isEditing && venues.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
-                    >
-                      <div className="flex items-center gap-2 mb-4">
-                        <AlertCircle size={20} className="text-[#8B1E26]" />
-                        <h2 className="text-2xl font-bold text-[#2D2D2D]">Venue Availability</h2>
-                      </div>
-                      <div className="space-y-4">
-                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                          <p className="text-sm font-medium text-green-800 mb-3">
-                            ✓ Available Venues ({venues.filter((v) => v.type === event?.requested_resource_type).length})
-                          </p>
-                          <div className="space-y-2">
-                            {venues.filter((v) => v.type === event?.requested_resource_type).length > 0 ? (
-                              venues
-                                .filter((v) => v.type === event?.requested_resource_type)
-                                .map((venue) => (
-                                  <div
-                                    key={venue._id}
-                                    className="text-sm text-green-700 p-2 bg-green-50 rounded border border-green-200"
-                                  >
-                                    <strong>{venue.name}</strong> - {venue.location} (Capacity: {venue.capacity})
-                                  </div>
-                                ))
-                            ) : (
-                              <p className="text-sm text-green-600">No venues available</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
+                  
 
                   {/* Registrations */}
                   <motion.div

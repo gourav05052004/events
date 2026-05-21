@@ -108,7 +108,9 @@ export function Navbar({
   const items = userRole ? navigationItems[userRole] : [];
   // If an external sidebar/menu handler is provided (onMenuClick),
   // avoid duplicating those navigation items in the desktop navbar.
-  const showDesktopNavigation = !onMenuClick && userRole !== 'club';
+  // Also, when the current user is `admin` we keep the sidebar as the
+  // single source of navigation and remove duplicated links from the navbar.
+  const showDesktopNavigation = !onMenuClick && userRole !== 'club' && userRole !== 'admin';
 
   // Mobile menu toggling handled inline where needed; removed unused helper.
 
@@ -302,7 +304,7 @@ export function Navbar({
         </div>
 
         {/* Mobile Navigation - Only show if onMenuClick is NOT provided */}
-        {!onMenuClick && mobileMenuOpen && (
+        {!onMenuClick && mobileMenuOpen && userRole !== 'admin' && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
