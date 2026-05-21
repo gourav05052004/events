@@ -177,7 +177,7 @@ export default function ClubSettingsPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Club Settings" userRole="club" />
+        <Navbar title="Club Settings" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -192,7 +192,7 @@ export default function ClubSettingsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Settings" userRole="club" />
+      <Navbar title="Club Settings" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

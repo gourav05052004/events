@@ -248,7 +248,7 @@ export default function ClubTeamPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Club Team" userRole="club" />
+        <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -263,7 +263,7 @@ export default function ClubTeamPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Team" userRole="club" />
+      <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -299,8 +299,8 @@ export default function ClubTeamPage() {
                 <div className="p-6">
                   <div className="flex items-start gap-4 mb-4">
                     {/* Member Image */}
-                    <div className="flex-shrink-0">
-                      <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-[#E8E8E8] bg-gradient-to-br from-[#8B1E26] to-[#6B1520]">
+                    <div className="shrink-0">
+                      <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-[#E8E8E8] bg-linear-to-br from-[#8B1E26] to-[#6B1520]">
                         {member.data.image ? (
                           <img
                             src={member.data.image}
@@ -339,21 +339,23 @@ export default function ClubTeamPage() {
 
                   <div className="space-y-3 text-sm text-[#444444]">
                     <div className="flex items-start gap-2">
-                      <Users size={16} className="text-[#8B1E26] mt-0.5 flex-shrink-0" />
+                      <Users size={16} className="text-[#8B1E26] mt-0.5 shrink-0" />
                       <span>{member.data.department || 'Department not set'}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <Mail size={16} className="text-[#8B1E26] mt-0.5 flex-shrink-0" />
+                      <Mail size={16} className="text-[#8B1E26] mt-0.5 shrink-0" />
                       <span className="break-all">{member.data.email || 'Email not set'}</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <Phone size={16} className="text-[#8B1E26] mt-0.5 flex-shrink-0" />
+                      <Phone size={16} className="text-[#8B1E26] mt-0.5 shrink-0" />
                       <span>{member.data.phone || 'Phone not set'}</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <MapPin size={16} className="text-[#8B1E26] mt-0.5 flex-shrink-0" />
-                      <span>{member.data.office || 'Office not set'}</span>
-                    </div>
+                    {member.id !== 'president' && (
+                      <div className="flex items-start gap-2">
+                        <MapPin size={16} className="text-[#8B1E26] mt-0.5 shrink-0" />
+                        <span>{member.data.office || 'Office not set'}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -389,7 +391,7 @@ export default function ClubTeamPage() {
                   Profile Image
                 </label>
                 <div className="flex items-center gap-4">
-                  <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-[#E8E8E8] bg-gradient-to-br from-[#8B1E26] to-[#6B1520] flex-shrink-0">
+                  <div className="h-24 w-24 rounded-xl overflow-hidden border-2 border-[#E8E8E8] bg-linear-to-br from-[#8B1E26] to-[#6B1520] shrink-0">
                     {editForm.image ? (
                       <img
                         src={editForm.image}

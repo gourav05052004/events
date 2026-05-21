@@ -77,10 +77,12 @@ export async function GET(request: NextRequest) {
         return {
           id: String(event._id),
           title: event.title,
+          description: event.description,
           date: formatDateRange(event.date, event.end_date, 'en-GB'),
           startDate: event.date,
           endDate: event.end_date,
           time: event.start_time,
+          endTime: event.end_time,
           location: event.location || 'TBD',
           image:
             event.poster_url ||
@@ -89,6 +91,7 @@ export async function GET(request: NextRequest) {
           attendees: registrationCount,
           maxAttendees: event.max_participants,
           category: event.event_type,
+          registrationDeadline: event.registration_deadline,
           clubLogo: primaryClub?.logo || '',
           clubName: primaryClub?.club_name || 'Unknown Club',
           brandColor: primaryClub?.brand_color || '#8B1E26',
@@ -103,7 +106,35 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({ events: formattedEvents }, { status: 200 });
+    const completedApprovedEvents = events.filter(
+      (event: any) =>
+        String(event.primary_club_id) === String(objectClubId) &&
+        event.status === 'APPROVED' &&
+        new Date(event.date) < new Date()
+    );
+
+    const totalRegistrations = completedApprovedEvents.reduce((sum: number, event: any) => {
+      const formattedEvent = formattedEvents.find((item) => item.id === String(event._id));
+      return sum + (formattedEvent?.attendees || 0);
+    }, 0);
+
+    const totalCapacity = completedApprovedEvents.reduce(
+      (sum: number, event: any) => sum + (event.max_participants || 0),
+      0
+    );
+    const avgFillRate = totalCapacity === 0 ? 0 : Number(((totalRegistrations / totalCapacity) * 100).toFixed(1));
+
+    return NextResponse.json(
+      {
+      events: formattedEvents,
+      summary: {
+        totalRegistrations,
+        totalCapacity,
+        avgFillRate,
+      },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('[GET /api/club/events] Error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

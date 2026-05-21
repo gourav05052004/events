@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 import { Navbar } from '@/components/navbar';
 import { Sidebar } from '@/components/sidebar';
 import { EventCard } from '@/components/event-card';
-import { Modal } from '@/components/modal';
 import { StatusBadge } from '@/components/status-badge';
 import {
   AcademicYearSelector,
@@ -40,16 +39,25 @@ const sidebarItems = [
 interface ClubEvent {
   id: string;
   title: string;
+  description?: string;
   date: string;
   time: string;
+  endTime?: string;
   location: string;
   image: string;
   status: 'pending' | 'approved' | 'cancelled';
   attendees: number;
   maxAttendees: number;
   category: string;
+  registrationDeadline?: string;
   isOwner?: boolean;
   collaboratingClubs?: Array<{ id: string; name: string }>;
+}
+
+interface ClubEventsSummary {
+  totalRegistrations: number;
+  totalCapacity: number;
+  avgFillRate: number;
 }
 
 type ViewMode = 'grid' | 'table';
@@ -60,9 +68,13 @@ export default function ClubEventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ClubEvent['status']>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [selectedEvent, setSelectedEvent] = useState<ClubEvent | null>(null);
-  const [showEventModal, setShowEventModal] = useState(false);
   const [clubEvents, setClubEvents] = useState<ClubEvent[]>([]);
+  const [summary, setSummary] = useState<ClubEventsSummary>({
+    totalRegistrations: 0,
+    totalCapacity: 0,
+    avgFillRate: 0,
+  });
+  const [dashboardAvgAttendance, setDashboardAvgAttendance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { activeStartYear } = getAcademicYears();
   const [selectedYear, setSelectedYear] = useState(activeStartYear);
@@ -108,8 +120,20 @@ export default function ClubEventsPage() {
           return;
         }
         const { yearStart, yearEnd } = getAcademicYearRange(selectedYear);
+
+        setDashboardAvgAttendance(null);
+
+        const dashboardResponse = await fetch(
+          `/api/club/dashboard?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+        );
+
+        if (dashboardResponse.ok) {
+          const dashboardData = await dashboardResponse.json();
+          setDashboardAvgAttendance(dashboardData?.stats?.avgAttendance ?? null);
+        }
+
         const res = await fetch(
-          `/api/club/events/list?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
+          `/api/club/events?clubId=${clubId}&yearStart=${encodeURIComponent(yearStart)}&yearEnd=${encodeURIComponent(yearEnd)}`
         );
 
         if (res.status === 401) {
@@ -121,6 +145,7 @@ export default function ClubEventsPage() {
 
         if (res.ok) {
           setClubEvents(data.events || []);
+          setSummary(data.summary || { totalRegistrations: 0, totalCapacity: 0, avgFillRate: 0 });
         } else {
           console.error('Failed to load events:', data);
           toast.error(data.error || 'Failed to load events');
@@ -151,13 +176,15 @@ export default function ClubEventsPage() {
   const canEdit = (status: string, isOwner?: boolean) => Boolean(isOwner) && status?.toString().toLowerCase() === 'pending';
   const canDelete = (status: string, isOwner?: boolean) => Boolean(isOwner) && status?.toString().toLowerCase() !== 'approved';
 
-  const totalRegistrations = clubEvents.reduce((sum, event) => sum + event.attendees, 0);
-  const totalCapacity = clubEvents.reduce((sum, event) => sum + event.maxAttendees, 0);
-  const avgFillRate = totalCapacity === 0 ? 0 : Math.round((totalRegistrations / totalCapacity) * 100);
+  const totalRegistrations = summary.totalRegistrations || clubEvents.reduce((sum, event) => sum + event.attendees, 0);
+  const totalCapacity = summary.totalCapacity || clubEvents.reduce((sum, event) => sum + event.maxAttendees, 0);
+  const avgFillRate =
+    dashboardAvgAttendance !== null
+      ? dashboardAvgAttendance
+      : summary.avgFillRate || (totalCapacity === 0 ? 0 : Number(((totalRegistrations / totalCapacity) * 100).toFixed(1)));
 
   const openDetails = (event: ClubEvent) => {
-    setSelectedEvent(event);
-    setShowEventModal(true);
+    router.push(`/club/events/${event.id}`);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -187,7 +214,7 @@ export default function ClubEventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="My Events" userRole="club" />
+      <Navbar title="My Events" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -491,94 +518,6 @@ export default function ClubEventsPage() {
         </div>
       </div>
 
-      <Modal open={showEventModal} onClose={() => setShowEventModal(false)} title={selectedEvent?.title} size="lg">
-        {selectedEvent && (
-          <div className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-3">
-                <Calendar className="text-[#8B1E26]" size={20} />
-                <div>
-                  <p className="text-sm text-[#666666]">Date</p>
-                  <p className="font-bold text-[#2D2D2D]">{selectedEvent.date}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Users className="text-[#8B1E26]" size={20} />
-                <div>
-                  <p className="text-sm text-[#666666]">Registrations</p>
-                  <p className="font-bold text-[#2D2D2D]">
-                    {selectedEvent.attendees}/{selectedEvent.maxAttendees}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <MapPin className="text-[#8B1E26]" size={20} />
-                <div>
-                  <p className="text-sm text-[#666666]">Venue</p>
-                  <p className="font-bold text-[#2D2D2D]">{selectedEvent.location}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Filter className="text-[#8B1E26]" size={20} />
-                <div>
-                  <p className="text-sm text-[#666666]">Status</p>
-                  <StatusBadge status={selectedEvent.status} size="sm" />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (selectedEvent.status !== 'approved') return;
-                  const url = `/event/${selectedEvent.id}`;
-                  window.open(url, '_blank');
-                  setShowEventModal(false);
-                }}
-                disabled={selectedEvent.status !== 'approved'}
-                title={
-                  selectedEvent.status !== 'approved'
-                    ? 'Event must be approved to view public page'
-                    : 'Open public event page in a new tab'
-                }
-                className={`flex items-center gap-2 px-5 py-3 rounded-lg font-bold transition-colors ${
-                  selectedEvent.status === 'approved'
-                    ? 'bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                }`}
-              >
-                <Eye size={18} />
-                Open Public Page
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  if (selectedEvent.status !== 'pending') return;
-                  setShowEventModal(false);
-                  router.push(`/club/events/${selectedEvent.id}/edit`);
-                }}
-                disabled={selectedEvent.status !== 'pending'}
-                title={
-                  selectedEvent.status !== 'pending'
-                    ? 'Only pending events can be edited'
-                    : 'Edit this event'
-                }
-                className={`flex items-center gap-2 px-5 py-3 rounded-lg font-bold transition-colors ${
-                  selectedEvent.status === 'pending'
-                    ? 'border-2 border-[#8B1E26] text-[#8B1E26] bg-white'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                }`}
-              >
-                <Pencil size={18} />
-                Edit Event
-              </motion.button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </main>
   );
 }

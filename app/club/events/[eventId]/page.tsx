@@ -31,6 +31,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const eventId = params?.eventId as string;
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<any | null>(null);
   const [registrationCount, setRegistrationCount] = useState<number>(0);
@@ -108,8 +109,8 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" userRole="club" />
-        <Sidebar items={sidebarItems} />
+        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B1E26] mx-auto"></div>
@@ -123,8 +124,8 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" userRole="club" />
-        <Sidebar items={sidebarItems} />
+        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
             <h2 className="text-2xl font-bold mb-4">Event not found</h2>
@@ -139,8 +140,8 @@ export default function EventDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" userRole="club" />
-      <Sidebar items={sidebarItems} />
+      <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">

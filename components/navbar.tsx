@@ -61,6 +61,7 @@ export function Navbar({
   };
 
   const items = userRole ? navigationItems[userRole] : [];
+  const showDesktopNavigation = userRole !== 'club';
 
   // Mobile menu toggling handled inline where needed; removed unused helper.
 
@@ -102,7 +103,7 @@ export function Navbar({
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {items.map((item) => (
+            {showDesktopNavigation && items.map((item) => (
               <motion.button
                 key={item.href}
                 whileHover={{ color: '#8B1E26' }}

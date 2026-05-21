@@ -133,6 +133,9 @@ export default function ClubDashboard() {
           setBrandColor(statsData.brandColor || '#8B1E26');
           setFacultyCoordinator(statsData.facultyCoordinator || '');
           setStats(statsData.stats);
+        } else {
+          const statsError = await statsResponse.json().catch(() => ({}));
+          toast.error(statsError?.error || 'Failed to load dashboard stats');
         }
 
         // Fetch events
@@ -142,9 +145,13 @@ export default function ClubDashboard() {
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
           setEvents(eventsData.events || []);
+        } else {
+          const eventsError = await eventsResponse.json().catch(() => ({}));
+          toast.error(eventsError?.error || 'Failed to load club events');
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load club dashboard data');
       } finally {
         setIsLoading(false);
       }
@@ -203,6 +210,9 @@ export default function ClubDashboard() {
         const dashboardData = await dashboardResponse.json();
         console.log('[handleLogoUpload] ✅ Dashboard refreshed - Logo URL:', dashboardData.clubLogo || '❌ NO LOGO IN RESPONSE');
         setClubLogo(dashboardData.clubLogo || '');
+      } else {
+        const refreshError = await dashboardResponse.json().catch(() => ({}));
+        toast.error(refreshError?.error || 'Logo updated, but failed to refresh dashboard');
       }
     } catch (error) {
       console.error('[handleLogoUpload] Error:', error);
@@ -241,9 +251,65 @@ export default function ClubDashboard() {
     show: { opacity: 1, y: 0 },
   };
 
+  const handleDeleteEvent = async (event: EventTableRow) => {
+    try {
+      const res = await fetch(`/api/club/events/${event.id}`, {
+        method: 'DELETE',
+      });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        toast.error(json?.error || 'Failed to delete event');
+        return;
+      }
+
+      setEvents((prev) => prev.filter((current) => current.id !== event.id));
+      toast.success('Event deleted successfully');
+    } catch (err) {
+      console.error('Delete error', err);
+      toast.error('Failed to delete event');
+    }
+  };
+
+  const confirmDeleteEvent = (event: EventTableRow) => {
+    toast.custom(
+      (t) => (
+        <div
+          className={`rounded-xl border border-[#E8E8E8] bg-white p-4 shadow-xl ${
+            t.visible ? 'animate-enter' : 'animate-leave'
+          }`}
+        >
+          <p className="mb-4 text-sm text-[#2D2D2D]">
+            Are you sure you want to delete {event.title}? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => toast.dismiss(t.id)}
+              className="rounded-lg border border-[#E8E8E8] px-3 py-2 text-sm font-medium text-[#2D2D2D] hover:bg-[#F8F9FA]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                toast.dismiss(t.id);
+                await handleDeleteEvent(event);
+              }}
+              className="rounded-lg bg-[#8B1E26] px-3 py-2 text-sm font-medium text-white hover:bg-[#6B1520]"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
+  };
+
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Dashboard" userRole="club" />
+      <Navbar title="Club Dashboard" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -578,28 +644,7 @@ export default function ClubDashboard() {
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={async () => {
-                                      const confirmed = window.confirm(
-                                        `Are you sure you want to delete ${event.title}? This action cannot be undone.`
-                                      );
-                                      if (!confirmed) return;
-
-                                      try {
-                                        const res = await fetch(`/api/club/events/${event.id}`, {
-                                          method: 'DELETE',
-                                        });
-                                        const json = await res.json();
-                                        if (!res.ok) {
-                                          toast.error(json?.error || 'Failed to delete event');
-                                          return;
-                                        }
-                                        setEvents((prev) => prev.filter((e) => e.id !== event.id));
-                                        toast.success('Event deleted successfully');
-                                      } catch (err) {
-                                        console.error('Delete error', err);
-                                        toast.error('Failed to delete event');
-                                      }
-                                    }}
+                                    onClick={() => confirmDeleteEvent(event)}
                                     className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition-colors"
                                     title="Delete event"
                                   >
