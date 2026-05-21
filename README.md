@@ -30,16 +30,16 @@ Organizing college events traditionally involves a disjointed mix of spreadsheet
 *Include your project screenshots below to showcase the UI.*
 
 ### Homepage & Hero Section
-![Homepage Screenshot](./screenshots/homepage.png) <!-- Add your screenshot here -->
+![Homepage Screenshot](./public/screenshots/homepage.png) <!-- Add your screenshot here -->
 
 ### Student Dashboard & Event Browsing
-![Student Dashboard](./screenshots/student-dashboard.png) <!-- Add your screenshot here -->
+![Student Dashboard](./public/screenshots/student-dashboard.png) <!-- Add your screenshot here -->
 
 ### Club Event Creation
-![Club Dashboard](./screenshots/club-creation.png) <!-- Add your screenshot here -->
+![Club Dashboard](./public/screenshots/club-creation.png) <!-- Add your screenshot here -->
 
 ### Secure Team Registration (Consent Codes)
-![Team Registration](./screenshots/team-registration.png) <!-- Add your screenshot here -->
+![Team Registration](./public/screenshots/team-registration.png) <!-- Add your screenshot here -->
 
 ---
 
