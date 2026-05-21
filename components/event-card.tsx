@@ -11,7 +11,7 @@ interface EventCardProps {
   time: string;
   location: string;
   image: string;
-  status: 'pending' | 'approved' | 'cancelled';
+  status: 'pending' | 'approved' | 'cancelled' | 'upcoming' | 'completed';
   attendees?: number;
   maxAttendees?: number;
   clubLogo?: string;

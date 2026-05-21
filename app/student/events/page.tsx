@@ -48,7 +48,7 @@ interface BrowseEvent {
   time: string;
   location: string;
   image: string;
-  status: 'approved' | 'pending' | 'cancelled';
+  status: 'approved' | 'pending' | 'cancelled' | 'upcoming' | 'completed';
   attendees: number;
   maxAttendees: number;
   clubName: string;
@@ -86,21 +86,31 @@ export default function EventsPage() {
           );
 
           // Format events to match EventCard props and include categories array
-          const formattedEvents: BrowseEvent[] = approvedRaw.map((event: EventData) => ({
+          const formattedEvents: BrowseEvent[] = approvedRaw.map((event: EventData) => {
+            // determine if the event is in the past or upcoming. If an end_date is present,
+            // use it to decide completion; otherwise use the start date.
+            const now = new Date();
+            const start = event.date ? new Date(event.date) : null;
+            const end = event.end_date ? new Date(event.end_date) : null;
+            const isPast = end ? now > end : start ? now > start : false;
+            const derivedStatus: BrowseEvent['status'] = isPast ? 'completed' : 'upcoming';
+
+            return {
             id: event._id,
             title: event.title,
             date: formatDateRange(event.date, event.end_date, 'en-GB'),
             time: `${event.start_time} - ${event.end_time}`,
             location: event.location || 'TBD',
             image: event.poster_url || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-            status: 'approved',
+            status: derivedStatus,
             attendees: event.registrations || 0,
             maxAttendees: event.max_participants,
             clubName: event.club_name,
             clubLogo: event.club_logo,
             brandColor: event.club_brand_color || '#8B1E26',
             categories: event.categories || [],
-          }));
+          };
+          });
 
           // Store only approved events
           setAllEvents(formattedEvents);

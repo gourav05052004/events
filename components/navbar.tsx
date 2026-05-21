@@ -25,6 +25,8 @@ export function Navbar({
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
+  const [studentDisplayName, setStudentDisplayName] = useState('Student');
+  const [studentDisplayId, setStudentDisplayId] = useState('');
   const profileRef = useRef<HTMLDivElement>(null);
   
 
@@ -41,6 +43,49 @@ export function Navbar({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [profileDropdown]);
+
+  useEffect(() => {
+    const loadStudentSummary = async () => {
+      if (userRole !== 'student') return;
+
+      const storedName = window.localStorage.getItem('studentName');
+      const storedRollNumber = window.localStorage.getItem('studentRollNumber');
+      const studentId = window.localStorage.getItem('studentId');
+
+      if (storedName) {
+        setStudentDisplayName(storedName);
+      }
+
+      if (storedRollNumber) {
+        setStudentDisplayId(storedRollNumber);
+      }
+
+      if (!studentId) return;
+
+      try {
+        const response = await fetch(`/api/student/profile?id=${studentId}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const fetchedName = data?.student?.name;
+        const fetchedRoll = data?.student?.roll_number;
+
+        if (fetchedName) {
+          setStudentDisplayName(fetchedName);
+          window.localStorage.setItem('studentName', fetchedName);
+        }
+
+        if (fetchedRoll) {
+          setStudentDisplayId(fetchedRoll);
+          window.localStorage.setItem('studentRollNumber', fetchedRoll);
+        }
+      } catch {
+        // Non-blocking fallback to locally cached values.
+      }
+    };
+
+    loadStudentSummary();
+  }, [userRole]);
 
   // Notifications removed: keep bell icon but no unread count or listeners
 
@@ -61,7 +106,9 @@ export function Navbar({
   };
 
   const items = userRole ? navigationItems[userRole] : [];
-  const showDesktopNavigation = userRole !== 'club';
+  // If an external sidebar/menu handler is provided (onMenuClick),
+  // avoid duplicating those navigation items in the desktop navbar.
+  const showDesktopNavigation = !onMenuClick && userRole !== 'club';
 
   // Mobile menu toggling handled inline where needed; removed unused helper.
 
@@ -135,8 +182,17 @@ export function Navbar({
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
                     >
-                      <div className="bg-gradient-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
-                        <p className="text-sm font-semibold">My Account</p>
+                      <div className="bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
+                        {userRole === 'student' ? (
+                          <>
+                            <p className="text-sm font-semibold truncate">{studentDisplayName}</p>
+                            <p className="text-xs text-white/90 truncate">
+                              {studentDisplayId ? `ID: ${studentDisplayId}` : 'Student Account'}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm font-semibold">My Account</p>
+                        )}
                       </div>
 
                       {userRole === 'student' && (

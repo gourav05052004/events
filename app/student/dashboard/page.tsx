@@ -131,7 +131,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Student Dashboard" userRole="student" />
+        <Navbar title="Student Dashboard" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -150,7 +150,7 @@ export default function StudentDashboard() {
   if (error) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Student Dashboard" userRole="student" />
+        <Navbar title="Student Dashboard" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -173,7 +173,7 @@ export default function StudentDashboard() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Student Dashboard" userRole="student" />
+      <Navbar title="Student Dashboard" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

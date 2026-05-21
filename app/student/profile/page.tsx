@@ -217,7 +217,7 @@ export default function StudentProfile() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="My Profile" userRole="student" />
+        <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-6">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -232,7 +232,7 @@ export default function StudentProfile() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="My Profile" userRole="student" />
+      <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
       <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">
@@ -278,13 +278,13 @@ export default function StudentProfile() {
             className="bg-white rounded-2xl shadow-sm border border-[#E8E8E8] overflow-hidden"
           >
             {/* Header Background */}
-            <div className="h-32 bg-gradient-to-r from-[#8B1E26] to-[#6B1520]" />
+            <div className="h-32 bg-linear-to-r from-[#8B1E26] to-[#6B1520]" />
 
             <div className="px-6 sm:px-8">
               {/* Avatar Section */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 -mt-16 pb-8">
                 <div className="relative group">
-                  <div className="w-28 h-28 bg-gradient-to-br from-[#8B1E26] to-[#6B1520] rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-lg border-4 border-white overflow-hidden">
+                  <div className="w-28 h-28 bg-linear-to-br from-[#8B1E26] to-[#6B1520] rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-lg border-4 border-white overflow-hidden">
                     {profile?.avatar ? (
                       <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
                     ) : (
@@ -317,7 +317,7 @@ export default function StudentProfile() {
               </div>
 
               {/* Name and ID Card */}
-              <div className="bg-gradient-to-r from-[#8B1E26]/5 to-[#6B1520]/5 border border-[#E8E8E8] rounded-xl p-6 mb-8">
+              <div className="bg-linear-to-r from-[#8B1E26]/5 to-[#6B1520]/5 border border-[#E8E8E8] rounded-xl p-6 mb-8">
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-[#8B1E26] uppercase tracking-wider">Student Name</p>
                   <h2 className="text-3xl font-bold text-[#2D2D2D] mb-4">{profile?.name}</h2>

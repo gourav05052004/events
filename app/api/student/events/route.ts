@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     })
       .populate('primary_club_id', 'club_name logo brand_color')
       .populate('allocated_resource_id', 'name location resource_type')
-      .sort({ date: 1 })
+      .sort({ date: -1 })
       .lean<StudentEventRecord[]>();
 
     const data = await Promise.all(

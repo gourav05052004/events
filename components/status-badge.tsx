@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-type StatusType = 'pending' | 'approved' | 'cancelled' | 'available' | 'booked';
+type StatusType = 'pending' | 'approved' | 'cancelled' | 'available' | 'booked' | 'upcoming' | 'completed';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -19,6 +19,16 @@ const statusConfig = {
     bg: 'bg-[#10B981]',
     text: 'text-white',
     label: 'Approved',
+  },
+  upcoming: {
+    bg: 'bg-[#10B981]',
+    text: 'text-white',
+    label: 'Upcoming',
+  },
+  completed: {
+    bg: 'bg-red-600',
+    text: 'text-white',
+    label: 'Completed',
   },
   cancelled: {
     bg: 'bg-red-100',
