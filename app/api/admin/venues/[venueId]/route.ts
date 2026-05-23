@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Event, EventRegistration, Resource } from '@/models';
 import { Types } from 'mongoose';
+import { revalidateTag } from 'next/cache';
 
 type VenueRecord = {
   _id: Types.ObjectId;
@@ -161,6 +162,7 @@ export async function PUT(
         return NextResponse.json({ success: false, error: 'Venue not found' }, { status: 404 });
       }
 
+      revalidateTag('venues', 'max');
       return NextResponse.json({ success: true, data: venue });
     }
 
@@ -191,6 +193,7 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Venue not found' }, { status: 404 });
     }
 
+    revalidateTag('venues', 'max');
     return NextResponse.json({ success: true, data: venue });
   } catch {
     return NextResponse.json({ success: false, error: 'Failed to update venue' }, { status: 500 });
@@ -219,6 +222,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Venue not found' }, { status: 404 });
     }
 
+    revalidateTag('venues', 'max');
     return NextResponse.json({ success: true, data: venue });
   } catch {
     return NextResponse.json({ success: false, error: 'Failed to delete venue' }, { status: 500 });

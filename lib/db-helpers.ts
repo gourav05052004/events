@@ -13,6 +13,31 @@ import {
   type ActorType,
 } from '@/models';
 
+import { unstable_cache } from 'next/cache';
+
+/**
+ * Cached database accessors for static lists
+ */
+export const getCachedClubs = unstable_cache(
+  async () => {
+    await connectDB();
+    const clubs = await import('@/models').then(m => m.Club.find().select('-password_hash').lean());
+    return JSON.parse(JSON.stringify(clubs));
+  },
+  ['clubs-list'],
+  { tags: ['clubs'], revalidate: 3600 }
+);
+
+export const getCachedVenues = unstable_cache(
+  async () => {
+    await connectDB();
+    const venues = await import('@/models').then(m => m.Resource.find().sort({ name: 1 }).lean());
+    return JSON.parse(JSON.stringify(venues));
+  },
+  ['venues-list'],
+  { tags: ['venues'], revalidate: 3600 }
+);
+
 /**
  * Log activity for audit trail
  */

@@ -4,6 +4,7 @@ import React from "react"
 
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -56,6 +57,27 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
           ))}
         </AnimatePresence>
       </nav>
+
+      {/* Logout Button */}
+      <div className="p-4 border-t border-[#E8E8E8]">
+        <button
+          onClick={() => {
+            window.localStorage.removeItem('clubId');
+            window.localStorage.removeItem('studentId');
+            window.localStorage.removeItem('adminId');
+            window.localStorage.removeItem('token');
+            document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            onMobileClose?.();
+            router.push('/login');
+          }}
+          className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 rounded-lg transition-colors font-medium"
+        >
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
+      </div>
     </div>
   );
 

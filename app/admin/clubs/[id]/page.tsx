@@ -401,27 +401,6 @@ export default function AdminClubDetailsPage() {
               </div>
             )}
           </motion.div>
-
-          {/* Team Members */}
-          {teamMembers.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl border border-gray-100 shadow-sm p-6"
-            >
-              <h2 className="text-xl font-bold text-[#2D2D2D] mb-4">Team Members</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {teamMembers.map((member) => (
-                  <div key={member._id} className="bg-gray-50 rounded-lg p-3 text-sm">
-                    <p className="font-bold text-[#2D2D2D]">{member.name}</p>
-                    <p className="text-gray-600">{member.role}</p>
-                    {member.email && <p className="text-gray-500 mt-1">{member.email}</p>}
-                    <p className="text-gray-400 mt-1">{member.teamName}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
         </div>
       </div>
     </main>

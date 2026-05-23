@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Resource, Event } from '@/models';
+import { getCachedVenues } from '@/lib/db-helpers';
+import { revalidateTag } from 'next/cache';
 
 /**
  * Helper function to check if two time ranges overlap
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
     const endTime = searchParams.get('endTime');
     const eventId = searchParams.get('eventId');
 
-    const venues = await Resource.find().sort({ name: 1 }).lean();
+    const venues = await getCachedVenues();
 
     // Get booking count for each venue
     const venuesWithBookings = await Promise.all(
@@ -162,6 +164,8 @@ export async function POST(request: NextRequest) {
     });
 
     await newVenue.save();
+    
+    revalidateTag('venues', 'max');
 
     return NextResponse.json(
       {

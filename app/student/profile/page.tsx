@@ -241,20 +241,20 @@ export default function StudentProfile() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-8"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8"
           >
             <div>
-              <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">My Profile</h1>
-              <p className="text-[#666666]">Manage your student profile information</p>
+              <h1 className="text-3xl sm:text-4xl font-bold text-[#2D2D2D] mb-2">My Profile</h1>
+              <p className="text-[#666666] text-sm sm:text-base">Manage your student profile information</p>
             </div>
             {!isEditing && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-6 py-2 bg-[#8B1E26] text-white rounded-lg hover:bg-[#6B1520] font-medium transition-colors"
+                className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2 bg-[#8B1E26] text-white rounded-lg hover:bg-[#6B1520] font-medium transition-colors whitespace-nowrap text-sm sm:text-base"
               >
-                <Edit2 size={18} />
+                <Edit2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                 Edit Profile
               </motion.button>
             )}
@@ -471,9 +471,9 @@ export default function StudentProfile() {
                       <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#F8F9FA]">
                         <Mail size={24} className="text-[#8B1E26]" />
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-[#999999] mb-1">Email Address</p>
-                        <p className="text-lg font-semibold text-[#2D2D2D]">{profile?.email}</p>
+                        <p className="text-lg font-semibold text-[#2D2D2D] break-all">{profile?.email}</p>
                       </div>
                     </div>
 

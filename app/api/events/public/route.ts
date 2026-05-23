@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { Event, EventRegistration } from '@/models';
 
+export const revalidate = 60;
+
 type PopulatedClub = {
   club_name?: string;
   logo?: string;
@@ -67,30 +69,35 @@ export async function GET(request: NextRequest) {
       .sort({ date: -1 })
       .lean<PublicEventRecord[]>();
 
-    const publicEvents = await Promise.all(
-      events.map(async (event) => {
-        const registrations = await EventRegistration.countDocuments({ event_id: event._id });
+    const eventIds = events.map(e => e._id);
+    const registrationCounts = await EventRegistration.aggregate([
+      { $match: { event_id: { $in: eventIds } } },
+      { $group: { _id: '$event_id', count: { $sum: 1 } } }
+    ]);
+    const countsMap = new Map(registrationCounts.map(r => [r._id.toString(), r.count]));
 
-        return {
-          id: String(event._id),
-          title: event.title,
-          date: event.date,
-          end_date: event.end_date,
-          time: `${event.start_time} - ${event.end_time}`,
-          location: event.location || event.allocated_resource_id?.location || 'TBD',
-          image:
-            event.poster_url ||
-            'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
-          status: 'approved' as const,
-          attendees: registrations,
-          maxAttendees: event.max_participants,
-          clubName: event.primary_club_id?.club_name || 'Unknown Club',
-          clubLogo: event.primary_club_id?.logo || undefined,
-          brandColor: event.primary_club_id?.brand_color || '#8B1E26',
-          categories: event.categories || [],
-        };
-      })
-    );
+    const publicEvents = events.map((event) => {
+      const registrations = countsMap.get(String(event._id)) || 0;
+
+      return {
+        id: String(event._id),
+        title: event.title,
+        date: event.date,
+        end_date: event.end_date,
+        time: `${event.start_time} - ${event.end_time}`,
+        location: event.location || event.allocated_resource_id?.location || 'TBD',
+        image:
+          event.poster_url ||
+          'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
+        status: 'approved' as const,
+        attendees: registrations,
+        maxAttendees: event.max_participants,
+        clubName: event.primary_club_id?.club_name || 'Unknown Club',
+        clubLogo: event.primary_club_id?.logo || undefined,
+        brandColor: event.primary_club_id?.brand_color || '#8B1E26',
+        categories: event.categories || [],
+      };
+    });
 
     return NextResponse.json({ success: true, events: publicEvents }, { status: 200 });
   } catch (error) {

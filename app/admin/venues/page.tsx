@@ -252,11 +252,11 @@ export default function AdminVenuesPage() {
               </div>
 
               {/* Filters & Actions */}
-              <div className="flex gap-3">
+              <div className="flex flex-wrap sm:flex-nowrap gap-3">
                 <select
                   value={availabilityFilter}
                   onChange={(e) => setAvailabilityFilter(e.target.value)}
-                  className="px-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
+                  className="w-full sm:w-auto px-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
                 >
                   <option value="all">All Availability</option>
                   <option value="available">Available</option>
@@ -264,25 +264,27 @@ export default function AdminVenuesPage() {
                   <option value="full_booked">Fully Booked</option>
                 </select>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1620] transition-all"
-                >
-                  <Plus size={18} />
-                  Add Venue
-                </motion.button>
+                <div className="flex w-full sm:w-auto gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1620] transition-all whitespace-nowrap"
+                  >
+                    <Plus size={18} />
+                    Add Venue
+                  </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleExport}
-                  className="flex items-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all"
-                >
-                  <Download size={18} />
-                  Export
-                </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleExport}
+                    className="flex-1 sm:flex-none flex justify-center items-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all whitespace-nowrap"
+                  >
+                    <Download size={18} />
+                    Export
+                  </motion.button>
+                </div>
               </div>
             </div>
 

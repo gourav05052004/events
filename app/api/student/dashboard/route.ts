@@ -4,6 +4,7 @@ import connectDB from '@/lib/db';
 import EventRegistration from '@/models/EventRegistration';
 import Event from '@/models/Event';
 import Student from '@/models/Student';
+import '@/models/Club'; // Import Club to register the schema
 import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {

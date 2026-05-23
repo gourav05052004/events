@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Event from '@/models/Event';
 import EventRegistration from '@/models/EventRegistration';
+import '@/models/Club'; // Import Club to register the schema
 
 /**
  * GET /api/events
@@ -24,33 +25,36 @@ export async function GET() {
       .populate('collaborating_clubs', 'club_name')
       .lean();
 
-    // Get registration counts for each event
-    const eventsWithCounts = await Promise.all(
-      events.map(async (event: any) => {
-        const registrationCount = await EventRegistration.countDocuments({
-          event_id: event._id,
-        });
+    const eventIds = events.map((e: any) => e._id);
+    const registrationCounts = await EventRegistration.aggregate([
+      { $match: { event_id: { $in: eventIds } } },
+      { $group: { _id: '$event_id', count: { $sum: 1 } } }
+    ]);
+    const countsMap = new Map(registrationCounts.map(r => [r._id.toString(), r.count]));
 
-        return {
-          id: event._id.toString(),
-          title: event.title,
-          date: event.date,
-          end_date: event.end_date,
-          time: `${event.start_time} - ${event.end_time}`,
-          location: event.location || 'TBD',
-          image: event.poster_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
-          status: event.status.toLowerCase(),
-          attendees: registrationCount,
-          maxAttendees: event.max_participants,
-          clubName: event.primary_club_id?.club_name || 'Unknown Club',
-          clubLogo: event.primary_club_id?.logo || undefined,
-          brandColor: event.primary_club_id?.brand_color || '#8B1E26',
-          collaboratingClubs: Array.isArray(event.collaborating_clubs)
-            ? event.collaborating_clubs.map((c: any) => ({ id: String(c._id), name: c.club_name }))
-            : [],
-        };
-      })
-    );
+    // Get registration counts for each event
+    const eventsWithCounts = events.map((event: any) => {
+      const registrationCount = countsMap.get(event._id.toString()) || 0;
+
+      return {
+        id: event._id.toString(),
+        title: event.title,
+        date: event.date,
+        end_date: event.end_date,
+        time: `${event.start_time} - ${event.end_time}`,
+        location: event.location || 'TBD',
+        image: event.poster_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
+        status: event.status.toLowerCase(),
+        attendees: registrationCount,
+        maxAttendees: event.max_participants,
+        clubName: event.primary_club_id?.club_name || 'Unknown Club',
+        clubLogo: event.primary_club_id?.logo || undefined,
+        brandColor: event.primary_club_id?.brand_color || '#8B1E26',
+        collaboratingClubs: Array.isArray(event.collaborating_clubs)
+          ? event.collaborating_clubs.map((c: any) => ({ id: String(c._id), name: c.club_name }))
+          : [],
+      };
+    });
 
     return NextResponse.json(
       {

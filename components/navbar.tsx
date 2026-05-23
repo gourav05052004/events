@@ -293,8 +293,8 @@ export function Navbar({
             ) : null}
           </div>
 
-          {/* Mobile Menu Button - Only show if onMenuClick is NOT provided */}
-          {!onMenuClick && (
+          {/* Mobile Menu Button - Only show if onMenuClick is NOT provided and there are items to show */}
+          {!onMenuClick && items.length > 0 && userRole !== 'admin' && (
             <button 
               className="md:hidden" 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

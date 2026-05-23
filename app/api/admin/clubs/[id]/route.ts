@@ -39,21 +39,6 @@ interface EventLeanRecord {
   allocated_resource_id?: VenueLeanRecord | null;
 }
 
-interface TeamLeanRecord {
-  _id: Types.ObjectId;
-  team_name: string;
-  team_leader_id: Types.ObjectId;
-}
-
-interface TeamMemberLeanRecord {
-  _id: Types.ObjectId;
-  team_id: Types.ObjectId;
-  student_id?: {
-    _id: Types.ObjectId;
-    name?: string;
-    email?: string;
-  } | null;
-}
 
 /**
  * GET /api/admin/clubs/[id]
@@ -112,41 +97,7 @@ export async function GET(
       })
     );
 
-    const eventIds = events.map((event) => event._id);
-    let teamMembers: Array<{
-      _id: string;
-      name: string;
-      role: string;
-      email: string;
-      teamName: string;
-    }> = [];
 
-    if (eventIds.length > 0) {
-      const teams = await Team.find({ event_id: { $in: eventIds } }).lean<TeamLeanRecord[]>();
-      const teamIds = teams.map((team) => team._id);
-
-      if (teamIds.length > 0) {
-        const teamById = new Map<string, TeamLeanRecord>();
-        teams.forEach((team) => teamById.set(String(team._id), team));
-
-        const members = await TeamMember.find({ team_id: { $in: teamIds } })
-          .populate('student_id', 'name email')
-          .lean<TeamMemberLeanRecord[]>();
-
-        teamMembers = members.map((member) => {
-          const team = teamById.get(String(member.team_id));
-          const isLeader = team ? String(team.team_leader_id) === String(member.student_id?._id || '') : false;
-
-          return {
-            _id: String(member._id),
-            name: member.student_id?.name || 'Unknown Member',
-            role: isLeader ? 'Team Leader' : 'Member',
-            email: member.student_id?.email || '',
-            teamName: team?.team_name || 'Team',
-          };
-        });
-      }
-    }
 
     const summary = {
       totalEvents: eventsWithRegistrations.length,
@@ -185,7 +136,6 @@ export async function GET(
           },
         },
         events: eventsWithRegistrations,
-        teamMembers,
         summary,
       },
     });
@@ -253,6 +203,9 @@ export async function PUT(
 
     await club.save();
 
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag('clubs', 'max');
+
     return NextResponse.json({
       success: true,
       message: 'Club updated successfully',
@@ -304,6 +257,9 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag('clubs', 'max');
 
     return NextResponse.json({
       success: true,

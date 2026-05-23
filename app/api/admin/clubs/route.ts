@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    const clubs = await Club.find().select('-password_hash').lean();
+    const clubs = await import('@/lib/db-helpers').then(m => m.getCachedClubs());
     
     console.log('[GET /api/admin/clubs] Retrieved', clubs.length, 'clubs');
     
@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Create club
     const newClub = await Club.create({
       club_name,
       email: email.toLowerCase(),
@@ -98,6 +97,9 @@ export async function POST(request: NextRequest) {
       description: description || '',
       is_active: true,
     });
+
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag('clubs', 'max');
 
     return NextResponse.json(
       {
@@ -205,6 +207,9 @@ export async function PUT(request: NextRequest) {
     // Verify the update by fetching fresh from database
     const verifiedClub = await Club.findById(clubId).lean() as any;
     console.log('[PUT /api/admin/clubs] 🔍 Verification - Logo in database:', verifiedClub?.logo || '❌ STILL NO LOGO');
+
+    const { revalidateTag } = await import('next/cache');
+    revalidateTag('clubs', 'max');
 
     return NextResponse.json({
       success: true,
