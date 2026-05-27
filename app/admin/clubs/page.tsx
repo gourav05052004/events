@@ -143,7 +143,7 @@ export default function AdminClubsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Clubs Management" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Clubs Management" userRole="admin" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

@@ -44,7 +44,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased ${_geist.className} ${_geistMono.className}`}>
+      <body
+        suppressHydrationWarning
+        className={`font-sans antialiased ${_geist.className} ${_geistMono.className}`}
+      >
         <ToasterProvider />
         {children}
         <Analytics />

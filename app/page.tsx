@@ -288,14 +288,18 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F8F9FA]">
+    <main className="min-h-screen bg-[#F8F9FA] overflow-x-hidden">
       <Navbar title="V-Sphere" />
 
       {/* Hero Section */}
       <section 
-        className="relative overflow-hidden text-white min-h-[calc(100vh-70px)] flex items-center justify-center bg-center bg-cover bg-no-repeat"
-        style={{ backgroundImage: "url('/hero.png')" }}
+        className="relative overflow-hidden text-white min-h-screen w-full flex items-center justify-center pt-20"
       >
+        <img
+          src="/hero.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-[#6a151b]/80 pointer-events-none z-0"></div>
         <div className="absolute inset-0 overflow-hidden z-0">
           <div
@@ -359,7 +363,7 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/login')}
-                className="px-8 py-3.5 bg-white text-[#6a151b] rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 font-mono text-lg min-w-[200px]"
+                className="px-8 py-3.5 bg-white text-[#6a151b] rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center justify-center gap-2 font-mono text-lg min-w-50"
               >
                 Get Started
                 <ArrowRight size={20} />
@@ -368,7 +372,7 @@ export default function Home() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/events')}
-                className="px-8 py-3.5 border-2 border-white text-white rounded-xl font-bold hover:bg-white hover:text-[#6a151b] transition-colors duration-200 font-mono text-lg min-w-[200px]"
+                className="px-8 py-3.5 border-2 border-white text-white rounded-xl font-bold hover:bg-white hover:text-[#6a151b] transition-colors duration-200 font-mono text-lg min-w-50"
               >
                 Browse Events
               </motion.button>
@@ -535,9 +539,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-b from-[#1a1a1a] via-black to-black border-t border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)] text-white py-12 relative overflow-hidden">
+      <footer className="bg-linear-to-b from-[#1a1a1a] via-black to-black border-t border-white/10 shadow-[inset_0_1px_2px_rgba(255,255,255,0.05)] text-white py-12 relative overflow-hidden">
         {/* Subtle glossy overlay */}
-        <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-1/2 bg-linear-to-b from-white/5 to-transparent pointer-events-none"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>

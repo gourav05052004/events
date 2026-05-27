@@ -162,7 +162,7 @@ export default function EventDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -177,7 +177,7 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
@@ -193,7 +193,7 @@ export default function EventDetailPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Event Details" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">

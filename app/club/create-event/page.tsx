@@ -463,7 +463,7 @@ export default function CreateEventPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Create Event" userRole="club" showBackButton={true} onBackClick={() => router.back()} onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Create Event" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

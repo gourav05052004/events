@@ -116,7 +116,7 @@ export default function AdminEventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Management" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Event Management" userRole="admin" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -124,7 +124,7 @@ export default function AdminEventsPage() {
       />
 
       <div className="md:ml-64 pt-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-12">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -133,11 +133,11 @@ export default function AdminEventsPage() {
           >
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
-                <h1 className="text-4xl font-bold text-[#2D2D2D] mb-2">All Events</h1>
-                <p className="text-[#666666]">View, approve, and manage all campus events.</p>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#2D2D2D] mb-2">All Events</h1>
+                <p className="text-sm sm:text-base text-[#666666]">View, approve, and manage all campus events.</p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-1 self-start sm:self-auto">
                   <button
                     onClick={() => setViewMode('table')}
                     className={
@@ -171,29 +171,29 @@ export default function AdminEventsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-[#E8E8E8]"
+            className="bg-white rounded-xl shadow-sm p-4 sm:p-6 mb-8 border border-[#E8E8E8]"
           >
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               {/* Search */}
-              <div className="relative flex-1 md:max-w-md">
+              <div className="relative flex-1 w-full lg:max-w-md">
                 <Search className="absolute left-4 top-3.5 text-[#8B1E26]" size={20} />
                 <input
                   type="text"
                   placeholder="Search events or organizers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
+                  className="w-full pl-12 pr-4 py-2.5 sm:py-3 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
                 />
               </div>
 
               {/* Filters & Actions */}
-              <div className="flex gap-3">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div className="relative w-full sm:w-auto">
                   <Filter className="absolute left-3 top-3.5 text-[#8B1E26]" size={18} />
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
+                    className="w-full sm:w-auto pl-10 pr-4 py-2 border border-[#E8E8E8] rounded-lg bg-white text-[#2D2D2D] focus:outline-none focus:ring-2 focus:ring-[#8B1E26]"
                   >
                     <option value="all">All Status</option>
                     <option value="APPROVED">Approved</option>
@@ -205,7 +205,7 @@ export default function AdminEventsPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all"
+                  className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all w-full sm:w-auto"
                 >
                   <Download size={18} />
                   Export
@@ -219,7 +219,7 @@ export default function AdminEventsPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-[#666666] mb-6"
+            className="text-sm sm:text-base text-[#666666] mb-6"
           >
             {isLoading ? 'Loading...' : `Showing ${filteredEvents.length} of ${events.length} events`}
           </motion.p>

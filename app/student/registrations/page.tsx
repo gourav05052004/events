@@ -150,7 +150,7 @@ export default function StudentRegistrationsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="My Registrations" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="My Registrations" userRole="student" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

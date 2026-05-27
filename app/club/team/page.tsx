@@ -248,7 +248,7 @@ export default function ClubTeamPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar
           items={sidebarItems}
           mobileOpen={mobileMenuOpen}
@@ -263,7 +263,7 @@ export default function ClubTeamPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Club Team" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

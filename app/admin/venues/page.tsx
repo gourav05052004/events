@@ -184,7 +184,7 @@ export default function AdminVenuesPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Venue Management" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Venue Management" userRole="admin" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

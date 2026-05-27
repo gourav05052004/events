@@ -309,7 +309,7 @@ export default function ClubDashboard() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Club Dashboard" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Club Dashboard" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

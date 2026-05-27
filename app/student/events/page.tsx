@@ -159,7 +159,7 @@ export default function EventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Browse Events" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Browse Events" userRole="student" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

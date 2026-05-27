@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
@@ -23,11 +23,14 @@ export function Navbar({
   hideLoginButton = false
 }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [studentDisplayName, setStudentDisplayName] = useState('Student');
   const [studentDisplayId, setStudentDisplayId] = useState('');
   const profileRef = useRef<HTMLDivElement>(null);
+  const isHomePage = pathname === '/';
+  const canNavigateHome = !userRole;
   
 
   // Close dropdown when clicking outside
@@ -118,16 +121,20 @@ export function Navbar({
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="sticky top-0 z-50 bg-white shadow-sm border-b border-[#E8E8E8]"
+      className={`z-50 border-b border-[#E8E8E8] shadow-sm ${
+        isHomePage
+          ? 'absolute top-0 left-0 right-0 w-full bg-white/70 backdrop-blur-md border-b border-white/30'
+          : 'sticky top-0 bg-white'
+      }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-4">
           <div className="flex items-center gap-4">
             {/* Mobile Menu Button - Only show if onMenuClick is provided */}
             {onMenuClick && (
               <button
                 onClick={onMenuClick}
-                className="md:hidden p-2 text-[#2D2D2D] hover:bg-[#F8F9FA] rounded-lg transition-colors"
+                className="md:hidden p-2 text-[#2D2D2D] hover:bg-[#F8F9FA] rounded-full transition-colors"
               >
                 <Menu size={24} />
               </button>
@@ -144,12 +151,44 @@ export function Navbar({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => router.push('/')}
-              className="text-2xl font-bold text-[#8B1E26] cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={canNavigateHome ? () => router.push('/') : undefined}
+              className={`text-xl sm:text-2xl font-bold text-[#8B1E26] transition-opacity whitespace-nowrap ${
+                canNavigateHome ? 'cursor-pointer hover:opacity-80' : ''
+              }`}
             >
               {title || 'V-Sphere'}
             </motion.div>
           </div>
+
+          {onMenuClick && userRole && (
+            <button
+              onClick={() => {
+                window.localStorage.removeItem('clubId');
+                window.localStorage.removeItem('studentId');
+                window.localStorage.removeItem('adminId');
+                window.localStorage.removeItem('token');
+                document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                setProfileDropdown(false);
+                router.push('/login');
+              }}
+              className="md:hidden inline-flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+              aria-label="Logout"
+            >
+              <LogOut size={22} />
+              <span>Logout</span>
+            </button>
+          )}
+
+          {!onMenuClick && !userRole && !hideLoginButton && (
+            <button
+              onClick={() => router.push('/login')}
+              className="md:hidden inline-flex items-center px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520] transition-colors"
+            >
+              Login
+            </button>
+          )}
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -172,7 +211,7 @@ export function Navbar({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setProfileDropdown(!profileDropdown)}
-                    className="px-4 py-2 bg-[#8B1E26] text-white rounded-lg font-medium hover:bg-[#6B1520] flex items-center gap-2"
+                    className="px-4 py-2 bg-[#8B1E26] text-white rounded-full font-medium hover:bg-[#6B1520] flex items-center gap-2"
                   >
                     <User size={18} />
                     Profile
@@ -183,7 +222,7 @@ export function Navbar({
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
+                          className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-lg border border-[#E8E8E8] z-50 overflow-hidden"
                     >
                       <div className="bg-linear-to-r from-[#8B1E26] to-[#6B1520] text-white px-4 py-3">
                         {userRole === 'student' ? (

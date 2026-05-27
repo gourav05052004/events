@@ -4,7 +4,6 @@ import React from "react"
 
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut } from 'lucide-react';
 
 interface NavItem {
   label: string;
@@ -27,16 +26,20 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
     onMobileClose?.();
   };
 
-  const content = (
+  const content = (isMobile: boolean) => (
     <div className="h-full flex flex-col bg-white border-r border-[#E8E8E8]">
       {/* Logo/Header */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-6 border-b border-[#E8E8E8]">
-        <h2 className="text-2xl font-bold text-[#8B1E26]">V-Sphere</h2>
-        <p className="text-sm text-[#666666] mt-1">Event Management</p>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className={`${isMobile ? 'p-4' : 'p-6'} border-b border-[#E8E8E8]`}
+      >
+        <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-[#8B1E26]`}>V-Sphere</h2>
+        <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-[#666666] mt-1`}>Event Management</p>
       </motion.div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+      <nav className={`${isMobile ? 'flex-1 min-h-0 overflow-y-auto p-3 space-y-1.5' : 'flex-1 min-h-0 overflow-y-auto p-4 space-y-2'}`}>
         <AnimatePresence>
           {items.map((item, index) => (
             <motion.button
@@ -58,26 +61,6 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
         </AnimatePresence>
       </nav>
 
-      {/* Logout Button */}
-      <div className="p-4 border-t border-[#E8E8E8]">
-        <button
-          onClick={() => {
-            window.localStorage.removeItem('clubId');
-            window.localStorage.removeItem('studentId');
-            window.localStorage.removeItem('adminId');
-            window.localStorage.removeItem('token');
-            document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            document.cookie = 'club_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            document.cookie = 'student_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            onMobileClose?.();
-            router.push('/login');
-          }}
-          className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3 rounded-lg transition-colors font-medium"
-        >
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
     </div>
   );
 
@@ -85,7 +68,7 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden md:block w-64 fixed left-0 top-16 h-[calc(100vh-4rem)] overflow-y-auto">
-        {content}
+        {content(false)}
       </aside>
 
       {/* Mobile Sidebar */}
@@ -106,9 +89,9 @@ export function Sidebar({ items, mobileOpen = false, onMobileClose }: SidebarPro
               animate={{ x: 0 }}
               exit={{ x: -256 }}
               transition={{ type: 'spring', damping: 20 }}
-              className="md:hidden fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] z-50 overflow-y-auto"
+              className="md:hidden fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] z-50 overflow-hidden flex flex-col"
             >
-              {content}
+              {content(true)}
             </motion.aside>
           </>
         )}

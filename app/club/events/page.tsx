@@ -237,7 +237,7 @@ export default function ClubEventsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="My Events" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="My Events" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}

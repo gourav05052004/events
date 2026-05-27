@@ -201,7 +201,7 @@ export default function EditEventPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -216,7 +216,7 @@ export default function EditEventPage() {
   if (!event) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
@@ -232,7 +232,7 @@ export default function EditEventPage() {
   if (event.status && event.status !== 'PENDING' && event.status !== 'pending') {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="Edit Event" userRole="club" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-20 max-w-3xl mx-auto px-4">
           <div className="bg-white rounded-xl p-8 border border-[#E8E8E8] text-center">
@@ -247,7 +247,7 @@ export default function EditEventPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Edit Event" userRole="club" showBackButton={true} onBackClick={() => router.push('/club/dashboard')} onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Edit Event" userRole="club" showBackButton={true} onBackClick={() => router.push('/club/dashboard')} onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">

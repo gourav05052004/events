@@ -217,7 +217,7 @@ export default function StudentProfile() {
   if (loading) {
     return (
       <main className="min-h-screen bg-[#F8F9FA]">
-        <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
+        <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
         <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
         <div className="md:ml-64 pt-6">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -232,7 +232,7 @@ export default function StudentProfile() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="My Profile" userRole="student" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar items={sidebarItems} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
       <div className="md:ml-64 pt-6">

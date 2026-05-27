@@ -255,7 +255,7 @@ export default function EventDetailsPage() {
 
   return (
     <main className="min-h-screen bg-[#F8F9FA]">
-      <Navbar title="Event Details" userRole="admin" onMenuClick={() => setMobileMenuOpen(true)} />
+      <Navbar title="Event Details" userRole="admin" onMenuClick={() => setMobileMenuOpen((prev) => !prev)} />
       <Sidebar
         items={sidebarItems}
         mobileOpen={mobileMenuOpen}
@@ -263,13 +263,13 @@ export default function EventDetailsPage() {
       />
 
       <div className="md:ml-64 pt-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-12">
           {/* Back Button */}
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-[#8B1E26] font-medium mb-8 hover:gap-3 transition-all"
+            className="flex items-center gap-2 text-[#8B1E26] font-medium mb-5 sm:mb-8 hover:gap-3 transition-all"
           >
             <ArrowLeft size={20} />
             Back
@@ -322,31 +322,33 @@ export default function EventDetailsPage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl shadow-sm p-8 mb-8 border border-[#E8E8E8]"
+                className="bg-white rounded-xl shadow-sm p-4 sm:p-6 lg:p-8 mb-8 border border-[#E8E8E8]"
               >
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 sm:gap-6">
                   <div className="flex-1">
-                    <h1 className="text-4xl font-bold text-[#2D2D2D] mb-4">{event.title}</h1>
-                    <div className="flex flex-wrap gap-4 text-[#666666] text-sm">
-                      <div className="flex items-center gap-2">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#2D2D2D] mb-3 sm:mb-4 leading-tight wrap-break-word">
+                      {event.title}
+                    </h1>
+                    <div className="flex flex-wrap gap-3 sm:gap-4 text-[#666666] text-xs sm:text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Calendar size={18} />
                         {formatDateRange(event.date, event.end_date, 'en-GB')}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Clock size={18} />
                         {event.start_time} - {event.end_time}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <MapPin size={18} />
                         {event.location || 'TBD'}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Users size={18} />
                         {event.registration_summary.total} / {event.max_participants} attendees
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 w-full lg:w-auto">
                     <span
                       className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 w-fit ${getStatusColor(
                         event.status
@@ -360,7 +362,7 @@ export default function EventDetailsPage() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setIsEditing(true)}
-                        className="flex items-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all"
+                        className="flex items-center justify-center gap-2 px-4 py-2 border-2 border-[#8B1E26] text-[#8B1E26] rounded-lg font-medium hover:bg-[#8B1E26]/5 transition-all w-full sm:w-auto"
                       >
                         <Edit2 size={18} />
                         Edit Status
@@ -370,19 +372,19 @@ export default function EventDetailsPage() {
                 </div>
               </motion.div>
 
-              <div className="grid md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Main Content */}
-                <div className="md:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-6 sm:space-y-8">
                   {/* Description */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                    className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-[#E8E8E8]"
                   >
                     <div className="flex items-center gap-2 mb-4">
                       <FileText size={20} className="text-[#8B1E26]" />
-                      <h2 className="text-2xl font-bold text-[#2D2D2D]">Description</h2>
+                      <h2 className="text-xl sm:text-2xl font-bold text-[#2D2D2D]">Description</h2>
                     </div>
                     {isEditing ? (
                       <textarea
@@ -401,11 +403,11 @@ export default function EventDetailsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 }}
-                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                    className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-[#E8E8E8]"
                   >
                     <div className="flex items-center gap-2 mb-4">
                       <MapPin size={20} className="text-[#8B1E26]" />
-                      <h2 className="text-2xl font-bold text-[#2D2D2D]">Venue Allocation</h2>
+                      <h2 className="text-xl sm:text-2xl font-bold text-[#2D2D2D]">Venue Allocation</h2>
                     </div>
                     {isEditing ? (
                       <div className="space-y-4">
@@ -498,21 +500,21 @@ export default function EventDetailsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
-                    className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]"
+                    className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-[#E8E8E8]"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-2xl font-bold text-[#2D2D2D]">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                      <h2 className="text-xl sm:text-2xl font-bold text-[#2D2D2D]">
                         Registrations ({event.registration_summary.total})
                       </h2>
                       <button
                         onClick={handleDownloadExcel}
                         disabled={event.registrations.length === 0}
-                        className="bg-red-800 hover:bg-red-900 text-white text-sm px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-red-800 hover:bg-red-900 text-white text-sm px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
                       >
                         Download Excel
                       </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
                       <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                         <p className="text-sm text-blue-600 mb-2">Confirmed</p>
                         <p className="text-2xl font-bold text-blue-700">{event.registration_summary.confirmed}</p>
@@ -580,11 +582,11 @@ export default function EventDetailsPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="space-y-6"
+                  className="space-y-4 sm:space-y-6"
                 >
                   {/* Status Editor */}
                   {isEditing && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 border-2 border-[#8B1E26]">
+                    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border-2 border-[#8B1E26]">
                       <h3 className="font-bold text-[#2D2D2D] mb-4">Update Status</h3>
                       <select
                         value={newStatus}
@@ -596,7 +598,7 @@ export default function EventDetailsPage() {
                         <option value="RESCHEDULED">Rescheduled</option>
                         <option value="CANCELLED">Cancelled</option>
                       </select>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <motion.button
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
@@ -631,7 +633,7 @@ export default function EventDetailsPage() {
                   )}
 
                   {/* Organizer Info */}
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
+                  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-[#E8E8E8]">
                     <h3 className="font-bold text-[#2D2D2D] mb-4">Organizing Club</h3>
                     <p className="text-[#2D2D2D] font-medium mb-2">{event.primary_club_id.club_name}</p>
                     <p className="text-sm text-[#666666] mb-3">
@@ -646,7 +648,7 @@ export default function EventDetailsPage() {
                   </div>
 
                   {/* Event Info */}
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-[#E8E8E8]">
+                  <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-[#E8E8E8]">
                     <h3 className="font-bold text-[#2D2D2D] mb-4">Event Info</h3>
                     <div className="space-y-3 text-sm">
                       <div>
